@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  role      String
+
+  resetToken   String?   // 👈 ADD
+  resetExpiry  DateTime? // 👈 ADD
+
+testCases TestCase[]
+bugs Bug[]
+
+  createdAt DateTime @default(now())
+}
+model TestCase {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  steps       String
+  expected    String
+
+  priority    String   // High / Medium / Low
+  status      String   // Pass / Fail / Pending
+
+
+  createdAt   DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+model Bug {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  severity    String   // High / Medium / Low
+  status      String   // Open / In Progress / Closed
+
+  createdAt DateTime @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
+

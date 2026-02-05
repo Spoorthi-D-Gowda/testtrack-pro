@@ -1,0 +1,174 @@
+.test-card h4 {
+  font-size: 18px;
+  color: #38bdf8;
+}
+
+
+.auth-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 10px 0 20px;
+  font-size: 14px;
+}
+
+.remember-box {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.remember-box input {
+  cursor: pointer;
+}
+
+.auth-options a {
+  color: #0077cc;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.auth-options a:hover {
+  text-decoration: underline;
+}
+
+
+body {
+  background: #c4c8d1;
+  font-family: Arial, sans-serif;
+}
+
+.auth-container {
+  min-height: 100vh;
+  width: 100%;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background: #929fbd; /* Dark professional background */
+  padding: 20px;
+}
+
+
+
+.auth-card {
+  background: white;
+  padding: 35px;
+  width: 350px;
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+}
+
+.auth-card h2 {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.auth-card input,
+.auth-card select {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.auth-card button {
+  width: 100%;
+  padding: 10px;
+  background: #2ec866;
+  border: none;
+  color: white;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.auth-card button:hover {
+  background: #25a855;
+}
+
+.auth-link {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.auth-link a {
+  color: #0077cc;
+  text-decoration: none;
+}
+
+.success-msg {
+  color: green;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.error-msg {
+  color: red;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.password-msg {
+  font-size: 13px;
+  color: orange;
+  margin-top: -10px;
+  margin-bottom: 10px;
+}
+/* Test Case Page Fix */
+
+.test-card {
+  width: 100%;
+  max-width: 650px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+/* Page Header */
+
+.page-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 15px;
+}
+.page-header h2 {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
+}
+
+
+/* Back Button */
+
+.back-btn {
+  background: transparent;
+  border: none;
+  color: #38bdf8;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  padding: 5px 0;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+/* Professional Back Link */
+
+.back-link {
+  color: #38bdf8;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  user-select: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
