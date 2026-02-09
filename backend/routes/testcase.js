@@ -84,6 +84,48 @@ router.put("/:id", auth, async (req, res) => {
     res.status(500).json({ msg: "Update failed" });
   }
 });
+// Clone Test Case
+router.post("/clone/:id", auth, async (req, res) => {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    const oldCase = await prisma.testCase.findUnique({
+      where: {
+        id: Number(req.params.id),
+      },
+    });
+
+    if (!oldCase) {
+      return res.status(404).json({ msg: "Test case not found" });
+    }
+
+    const cloned = await prisma.testCase.create({
+      data: {
+        title: oldCase.title + " (Copy)",
+        description: oldCase.description,
+        steps: oldCase.steps,
+        expected: oldCase.expected,
+        priority: oldCase.priority,
+        status: oldCase.status,
+
+        userId: req.user.id, // FIX
+      },
+    });
+
+    res.json(cloned);
+
+  } catch (err) {
+    console.error("CLONE ERROR:", err);
+
+    res.status(500).json({
+      msg: "Clone failed",
+      error: err.message,
+    });
+  }
+});
+
 
 
 // Delete Test Case

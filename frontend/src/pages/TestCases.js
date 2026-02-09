@@ -127,6 +127,26 @@ const [editId, setEditId] = useState(null);
     }
   };
 
+const cloneCase = async (id) => {
+  try {
+    await axios.post(
+      `http://localhost:5000/api/testcases/clone/${id}`,
+      {},
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    fetchCases();
+
+  } catch (err) {
+    alert("Clone failed ❌");
+  }
+};
+
+  
 // Load Data for Edit
 const editCase = (tc) => {
   setEditId(tc.id);
@@ -263,20 +283,36 @@ const editCase = (tc) => {
               <b>Status:</b> {tc.status}
             </p>
 
-            <button
-  onClick={() => editCase(tc)}
-  style={{ background: "#2563eb", marginRight: "10px" }}
+          <div
+  style={{
+    display: "flex",
+    gap: "15px",
+    marginTop: "12px",
+  }}
 >
-  Edit
-</button>
+  <button
+    onClick={() => editCase(tc)}
+    className="action-btn"
+  >
+    Edit
+  </button>
+
+  <button
+    onClick={() => cloneCase(tc.id)}
+    className="action-btn"
+  >
+    Clone
+  </button>
+
+  <button
+    onClick={() => deleteCase(tc.id)}
+    className="action-btn"
+  >
+    Delete
+  </button>
+</div>
 
 
-            <button
-              onClick={() => deleteCase(tc.id)}
-              style={{ background: "#dc2626" }}
-            >
-              Delete
-            </button>
 
           </div>
         ))}

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
 import axios from "axios";
 import "../auth.css";
 
@@ -10,11 +11,9 @@ export default function Analytics() {
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
+
     try {
       const res = await axios.get(
         "http://localhost:5000/api/dashboard/stats",
@@ -30,7 +29,11 @@ export default function Analytics() {
     } catch (err) {
       console.error(err);
     }
-  };
+}, [token]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   return (
     <div className="auth-container">

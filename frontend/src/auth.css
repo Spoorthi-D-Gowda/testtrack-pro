@@ -172,3 +172,17 @@ body {
 .back-link:hover {
   text-decoration: underline;
 }
+.action-btn {
+  background: transparent;
+  border: none;
+  color: #2563eb;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+.action-btn:hover {
+  text-decoration: underline;
+  color: #1d4ed8;
+}

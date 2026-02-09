@@ -8,46 +8,38 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String
-
-  resetToken   String?   // 👈 ADD
-  resetExpiry  DateTime? // 👈 ADD
-
-testCases TestCase[]
-bugs Bug[]
-
-  createdAt DateTime @default(now())
+  id          Int        @id @default(autoincrement())
+  name        String
+  email       String     @unique
+  password    String
+  role        String
+  createdAt   DateTime   @default(now())
+  resetExpiry DateTime?
+  resetToken  String?
+  bugs        Bug[]
+  testCases   TestCase[]
 }
+
 model TestCase {
   id          Int      @id @default(autoincrement())
   title       String
   description String
   steps       String
   expected    String
-
-  priority    String   // High / Medium / Low
-  status      String   // Pass / Fail / Pending
-
-
+  priority    String
+  status      String
   createdAt   DateTime @default(now())
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
 }
+
 model Bug {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  severity    String   // High / Medium / Low
-  status      String   // Open / In Progress / Closed
-
-  createdAt DateTime @default(now())
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  severity    String
+  status      String
+  createdAt   DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
 }
-
