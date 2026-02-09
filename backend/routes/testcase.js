@@ -6,74 +6,112 @@ const prisma = new PrismaClient();
 
 const router = express.Router();
 
-// Create Test Case
+
+// ================= CREATE TEST CASE =================
 router.post("/", auth, async (req, res) => {
+
   const {
     title,
     description,
+    module,
+    priority,
+    severity,
+    type,
+    status,
+    preconditions,
+    testData,
+    environment,
     steps,
     expected,
-    priority,
-    status,
   } = req.body;
 
   try {
+
     const testCase = await prisma.testCase.create({
       data: {
         title,
         description,
+        module,
+        priority,
+        severity,
+        type,
+        status,
+        preconditions,
+        testData,
+        environment,
         steps,
         expected,
-        priority,
-        status,
+
         userId: req.user.id,
       },
     });
 
     res.json(testCase);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Get All Test Cases
+
+// ================= GET ALL TEST CASES =================
 router.get("/", auth, async (req, res) => {
+
   try {
+
     const cases = await prisma.testCase.findMany({
       where: { userId: req.user.id },
       orderBy: { createdAt: "desc" },
     });
 
     res.json(cases);
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Update Test Case
+
+// ================= UPDATE TEST CASE =================
 router.put("/:id", auth, async (req, res) => {
+
   const {
     title,
     description,
+    module,
+    priority,
+    severity,
+    type,
+    status,
+    preconditions,
+    testData,
+    environment,
     steps,
     expected,
-    priority,
-    status,
   } = req.body;
 
   try {
+
     const updated = await prisma.testCase.update({
       where: {
         id: Number(req.params.id),
       },
+
       data: {
         title,
         description,
+        module,
+        priority,
+        severity,
+        type,
+        status,
+        preconditions,
+        testData,
+        environment,
         steps,
         expected,
-        priority,
-        status,
       },
     });
 
@@ -84,9 +122,13 @@ router.put("/:id", auth, async (req, res) => {
     res.status(500).json({ msg: "Update failed" });
   }
 });
-// Clone Test Case
+
+
+// ================= CLONE TEST CASE =================
 router.post("/clone/:id", auth, async (req, res) => {
+
   try {
+
     if (!req.user || !req.user.id) {
       return res.status(401).json({ msg: "Unauthorized" });
     }
@@ -103,20 +145,28 @@ router.post("/clone/:id", auth, async (req, res) => {
 
     const cloned = await prisma.testCase.create({
       data: {
+
         title: oldCase.title + " (Copy)",
         description: oldCase.description,
+        module: oldCase.module,
+        priority: oldCase.priority,
+        severity: oldCase.severity,
+        type: oldCase.type,
+        status: oldCase.status,
+        preconditions: oldCase.preconditions,
+        testData: oldCase.testData,
+        environment: oldCase.environment,
         steps: oldCase.steps,
         expected: oldCase.expected,
-        priority: oldCase.priority,
-        status: oldCase.status,
 
-        userId: req.user.id, // FIX
+        userId: req.user.id,
       },
     });
 
     res.json(cloned);
 
   } catch (err) {
+
     console.error("CLONE ERROR:", err);
 
     res.status(500).json({
@@ -127,18 +177,22 @@ router.post("/clone/:id", auth, async (req, res) => {
 });
 
 
-
-// Delete Test Case
+// ================= DELETE TEST CASE =================
 router.delete("/:id", auth, async (req, res) => {
+
   try {
+
     await prisma.testCase.delete({
       where: { id: Number(req.params.id) },
     });
 
     res.json({ msg: "Deleted successfully" });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
 
 module.exports = router;

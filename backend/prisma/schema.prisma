@@ -22,16 +22,33 @@ model User {
 
 model TestCase {
   id          Int      @id @default(autoincrement())
+
   title       String
   description String
+
+  module       String
+  priority     String
+  severity     String
+  type         String
+  status       String
+
+  preconditions String
+  testData       String
+  environment    String
+
   steps       String
   expected    String
-  priority    String
-  status      String
+  actual      String?
+
+  version     Int      @default(1)
+
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
 }
+
 
 model Bug {
   id          Int      @id @default(autoincrement())
