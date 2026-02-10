@@ -6,6 +6,14 @@ const prisma = new PrismaClient();
 
 const router = express.Router();
 
+const generateTCId = async () => {
+  const count = await prisma.testCase.count();
+
+  const num = (count + 1).toString().padStart(5, "0");
+
+  return `TC-2026-${num}`;
+};
+
 
 // ================= CREATE TEST CASE =================
 router.post("/", auth, async (req, res) => {
@@ -18,17 +26,32 @@ router.post("/", auth, async (req, res) => {
     severity,
     type,
     status,
+
     preconditions,
+    postconditions,
+    cleanupSteps,
+
     testData,
     environment,
+
+    tags,
+    estimatedTime,
+
+    automationStatus,
+    automationLink,
+
     steps,
-    expected,
   } = req.body;
 
   try {
 
+    const tcId = await generateTCId();
+
     const testCase = await prisma.testCase.create({
       data: {
+
+        testCaseId: tcId,
+
         title,
         description,
         module,
@@ -36,13 +59,33 @@ router.post("/", auth, async (req, res) => {
         severity,
         type,
         status,
+
         preconditions,
+        postconditions,
+        cleanupSteps,
+
         testData,
         environment,
-        steps,
-        expected,
+
+        tags,
+        estimatedTime,
+
+        automationStatus,
+        automationLink,
 
         userId: req.user.id,
+
+        steps: {
+          create: steps.map((s, i) => ({
+            stepNo: i + 1,
+            action: s.action,
+            testData: s.testData,
+            expected: s.expected,
+          })),
+        },
+      },
+      include: {
+        steps: true,
       },
     });
 
@@ -50,9 +93,10 @@ router.post("/", auth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ msg: "Create failed" });
   }
 });
+
 
 
 // ================= GET ALL TEST CASES =================
@@ -61,9 +105,20 @@ router.get("/", auth, async (req, res) => {
   try {
 
     const cases = await prisma.testCase.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+  where: {
+    userId: req.user.id,
+    isDeleted: false,
+  },
+
+  include: {
+    steps: true,
+  },
+
+  orderBy: {
+    createdAt: "desc",
+  },
+});
+
 
     res.json(cases);
 

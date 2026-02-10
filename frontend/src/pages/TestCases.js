@@ -9,6 +9,8 @@ export default function TestCases() {
   const [cases, setCases] = useState([]);
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [showHistoryId, setShowHistoryId] = useState(null);
 
   const [title, setTitle] = useState("");
   const [module, setModule] = useState("");
@@ -27,6 +29,11 @@ export default function TestCases() {
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
+
+  const [stepsList, setStepsList] = useState([
+  { action: "", testData: "", expected: "" }
+]);
+
 
   // ================= FETCH =================
   const fetchCases = useCallback(async () => {
@@ -87,19 +94,31 @@ export default function TestCases() {
         await axios.post(
           "http://localhost:5000/api/testcases",
           {
-            title,
-            description,
-            module,
-            priority,
-            severity,
-            type,
-            status,
-            preconditions,
-            testData,
-            environment,
-            steps,
-            expected,
-          },
+  title,
+  description,
+  module,
+  priority,
+  severity,
+  type,
+  status,
+
+  preconditions,
+  postconditions: "",
+  cleanupSteps: "",
+
+  testData,
+  environment,
+
+  tags: [],
+
+  estimatedTime: "",
+
+  automationStatus: "Not Automated",
+  automationLink: "",
+
+  steps: stepsList,
+}
+,
           {
             headers: {
               "x-auth-token": token,
@@ -131,6 +150,8 @@ export default function TestCases() {
     setPreconditions("");
     setTestData("");
     setEnvironment("");
+    setStepsList([{ action: "", testData: "", expected: "" }]);
+
   };
 
   // ================= DELETE =================
@@ -183,13 +204,64 @@ export default function TestCases() {
     setPreconditions(tc.preconditions);
     setTestData(tc.testData);
     setEnvironment(tc.environment);
-    setSteps(tc.steps);
+    setStepsList(
+  tc.steps && tc.steps.length > 0
+    ? tc.steps.map((s) => ({
+        action: s.action,
+        testData: s.testData || "",
+        expected: s.expected,
+      }))
+    : [{ action: "", testData: "", expected: "" }]
+);
+
     setExpected(tc.expected);
     setPriority(tc.priority);
     setStatus(tc.status);
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // Fetch History
+const fetchHistory = async (id) => {
+  try {
+
+    const res = await axios.get(
+      `http://localhost:5000/api/testcases/${id}/history`,
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    setHistory(res.data);
+    setShowHistoryId(id);
+
+  } catch (err) {
+    alert("Failed to load history ❌");
+  }
+};
+
+// Add new step
+const addStep = () => {
+  setStepsList([
+    ...stepsList,
+    { action: "", testData: "", expected: "" }
+  ]);
+};
+
+// Update step
+const updateStep = (index, field, value) => {
+  const updated = [...stepsList];
+  updated[index][field] = value;
+  setStepsList(updated);
+};
+
+// Remove step
+const removeStep = (index) => {
+  const filtered = stepsList.filter((_, i) => i !== index);
+  setStepsList(filtered);
+};
+
 
   // ================= UI =================
   return (
@@ -221,12 +293,6 @@ export default function TestCases() {
 
           <input placeholder="Description" value={description}
             onChange={(e) => setDescription(e.target.value)} required />
-
-          <input placeholder="Steps" value={steps}
-            onChange={(e) => setSteps(e.target.value)} required />
-
-          <input placeholder="Expected Result" value={expected}
-            onChange={(e) => setExpected(e.target.value)} required />
 
           <input placeholder="Module" value={module}
             onChange={(e) => setModule(e.target.value)} required />
@@ -282,6 +348,76 @@ export default function TestCases() {
             {editId ? "Update Test Case" : "Add Test Case"}
           </button>
 
+        <h4>Test Steps</h4>
+
+{stepsList.map((step, index) => (
+
+  <div
+    key={index}
+    style={{
+      border: "1px solid #334155",
+      padding: "10px",
+      marginBottom: "10px",
+      borderRadius: "6px",
+    }}
+  >
+
+    <p><b>Step {index + 1}</b></p>
+
+    <input
+      placeholder="Action"
+      value={step.action}
+      onChange={(e) =>
+        updateStep(index, "action", e.target.value)
+      }
+      required
+    />
+
+    <input
+      placeholder="Test Data"
+      value={step.testData}
+      onChange={(e) =>
+        updateStep(index, "testData", e.target.value)
+      }
+    />
+
+    <input
+      placeholder="Expected Result"
+      value={step.expected}
+      onChange={(e) =>
+        updateStep(index, "expected", e.target.value)
+      }
+      required
+    />
+
+    {stepsList.length > 1 && (
+      <button
+        type="button"
+        onClick={() => removeStep(index)}
+        style={{
+          background: "#f96262",
+          marginTop: "5px",
+        }}
+      >
+        Remove Step
+      </button>
+    )}
+
+  </div>
+))}
+
+<button
+  type="button"
+  onClick={addStep}
+  style={{
+    background: "#2563eb",
+    marginBottom: "15px",
+  }}
+>
+  + Add Step
+</button>
+
+
         </form>
 
         <hr />
@@ -326,8 +462,61 @@ export default function TestCases() {
               <p><b>Test Data:</b> {tc.testData}</p>
               <p><b>Environment:</b> {tc.environment}</p>
 
-              <p><b>Steps:</b> {tc.steps}</p>
-              <p><b>Expected:</b> {tc.expected}</p>
+              {/* STEPS */}
+<div>
+  <b>Steps:</b>
+
+  {tc.steps && tc.steps.length > 0 ? (
+    tc.steps.map((step) => (
+      <div
+        key={step.id}
+        style={{
+          marginLeft: "15px",
+          marginTop: "8px",
+          padding: "8px",
+          borderLeft: "3px solid #2563eb",
+          background: "#f8fafc",
+          borderRadius: "4px",
+        }}
+      >
+        <p>
+          <b>Step {step.stepNo}:</b> {step.action}
+        </p>
+
+        {step.testData && (
+          <p>
+            <b>Test Data:</b> {step.testData}
+          </p>
+        )}
+
+        <p>
+          <b>Expected:</b> {step.expected}
+        </p>
+
+        {step.actual && (
+          <p>
+            <b>Actual:</b> {step.actual}
+          </p>
+        )}
+
+        {step.status && (
+          <p>
+            <b>Status:</b> {step.status}
+          </p>
+        )}
+
+        {step.notes && (
+          <p>
+            <b>Notes:</b> {step.notes}
+          </p>
+        )}
+      </div>
+    ))
+  ) : (
+    <p style={{ color: "#64748b" }}>No steps added</p>
+  )}
+</div>
+
 
               <div style={{ display: "flex", gap: "15px" }}>
 
@@ -346,12 +535,72 @@ export default function TestCases() {
                   Delete
                 </button>
 
+                  <button
+    onClick={() => fetchHistory(tc.id)}
+    className="action-btn"
+  >
+    History
+  </button>
+
               </div>
 
             </div>
           ))}
 
       </div>
+
+      {/* Version History Panel */}
+{showHistoryId && (
+  <div
+    style={{
+      marginTop: "25px",
+      padding: "15px",
+      border: "1px solid #1c2128",
+      borderRadius: "8px",
+      background: "#c0c5d9",
+    }}
+  >
+
+    <h3>Version History</h3>
+
+    <button
+      style={{
+        float: "right",
+        background: "transparent",
+        color: "#011212",
+      }}
+      onClick={() => setShowHistoryId(null)}
+    >
+      Close
+    </button>
+
+    {history.length === 0 && <p>No history found</p>}
+
+    {history.map((h) => (
+
+      <div
+        key={h.id}
+        style={{
+          borderBottom: "1px solid #2e333b",
+          padding: "10px 0",
+        }}
+      >
+
+        <p><b>Version:</b> v{h.version}</p>
+        <p><b>Summary:</b> {h.summary}</p>
+        <p>
+          <b>Edited By:</b> {h.editedBy.name} ({h.editedBy.email})
+        </p>
+        <p>
+          <b>Date:</b>{" "}
+          {new Date(h.createdAt).toLocaleString()}
+        </p>
+
+      </div>
+    ))}
+  </div>
+)}
+
     </div>
   );
 }
