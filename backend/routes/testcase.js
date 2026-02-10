@@ -61,9 +61,13 @@ router.get("/", auth, async (req, res) => {
   try {
 
     const cases = await prisma.testCase.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+  where: {
+    userId: req.user.id,
+    isDeleted: false, // IMPORTANT
+  },
+  orderBy: { createdAt: "desc" },
+});
+
 
     res.json(cases);
 
@@ -179,11 +183,15 @@ router.post("/clone/:id", auth, async (req, res) => {
 
 // ================= DELETE TEST CASE =================
 router.delete("/:id", auth, async (req, res) => {
-
   try {
 
-    await prisma.testCase.delete({
-      where: { id: Number(req.params.id) },
+    await prisma.testCase.update({
+      where: {
+        id: Number(req.params.id),
+      },
+      data: {
+        isDeleted: true, // SOFT DELETE
+      },
     });
 
     res.json({ msg: "Deleted successfully" });
@@ -193,6 +201,7 @@ router.delete("/:id", auth, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
 
 
 module.exports = router;

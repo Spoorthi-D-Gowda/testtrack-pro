@@ -39,6 +39,7 @@ model TestCase {
   steps       String
   expected    String
   actual      String?
+  isDeleted Boolean @default(false)
 
   version     Int      @default(1)
 
