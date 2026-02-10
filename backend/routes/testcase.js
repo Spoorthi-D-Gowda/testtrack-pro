@@ -26,35 +26,36 @@ router.post("/", auth, async (req, res) => {
     severity,
     type,
     status,
-
     preconditions,
     postconditions,
     cleanupSteps,
-
     testData,
     environment,
-
     tags,
     estimatedTime,
-
     automationStatus,
     automationLink,
-
     steps,
+    expected,
   } = req.body;
 
   try {
 
-    const tcId = await generateTCId();
+    // Get count for auto ID
+    const count = await prisma.testCase.count();
+
+    const year = new Date().getFullYear();
+
+    const testCaseId = `TC-${year}-${String(count + 1).padStart(4, "0")}`;
 
     const testCase = await prisma.testCase.create({
       data: {
-
-        testCaseId: tcId,
+        testCaseId,
 
         title,
         description,
         module,
+
         priority,
         severity,
         type,
@@ -67,25 +68,14 @@ router.post("/", auth, async (req, res) => {
         testData,
         environment,
 
-        tags,
+        tags: tags || [],
+
         estimatedTime,
 
         automationStatus,
         automationLink,
 
         userId: req.user.id,
-
-        steps: {
-          create: steps.map((s, i) => ({
-            stepNo: i + 1,
-            action: s.action,
-            testData: s.testData,
-            expected: s.expected,
-          })),
-        },
-      },
-      include: {
-        steps: true,
       },
     });
 
@@ -93,11 +83,9 @@ router.post("/", auth, async (req, res) => {
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Create failed" });
+    res.status(500).json({ msg: "Server error" });
   }
 });
-
-
 
 // ================= GET ALL TEST CASES =================
 router.get("/", auth, async (req, res) => {

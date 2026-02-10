@@ -449,7 +449,10 @@ const removeStep = (index) => {
               }}
             >
 
-              <h4 style={{ color: "#2563eb" }}>{tc.title}</h4>
+              <h4>
+  {tc.testCaseId} — {tc.title}
+</h4>
+
 
               <p><b>Description:</b> {tc.description}</p>
               <p><b>Module:</b> {tc.module}</p>
