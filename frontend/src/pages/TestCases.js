@@ -9,6 +9,8 @@ export default function TestCases() {
   const [cases, setCases] = useState([]);
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [showHistoryId, setShowHistoryId] = useState(null);
 
   const [title, setTitle] = useState("");
   const [module, setModule] = useState("");
@@ -190,6 +192,26 @@ export default function TestCases() {
 
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
+  // Fetch History
+const fetchHistory = async (id) => {
+  try {
+
+    const res = await axios.get(
+      `http://localhost:5000/api/testcases/${id}/history`,
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    setHistory(res.data);
+    setShowHistoryId(id);
+
+  } catch (err) {
+    alert("Failed to load history ❌");
+  }
+};
 
   // ================= UI =================
   return (
@@ -346,12 +368,72 @@ export default function TestCases() {
                   Delete
                 </button>
 
+                  <button
+    onClick={() => fetchHistory(tc.id)}
+    className="action-btn"
+  >
+    History
+  </button>
+
               </div>
 
             </div>
           ))}
 
       </div>
+
+      {/* Version History Panel */}
+{showHistoryId && (
+  <div
+    style={{
+      marginTop: "25px",
+      padding: "15px",
+      border: "1px solid #1c2128",
+      borderRadius: "8px",
+      background: "#c0c5d9",
+    }}
+  >
+
+    <h3>Version History</h3>
+
+    <button
+      style={{
+        float: "right",
+        background: "transparent",
+        color: "#0a0b0b",
+      }}
+      onClick={() => setShowHistoryId(null)}
+    >
+      Close
+    </button>
+
+    {history.length === 0 && <p>No history found</p>}
+
+    {history.map((h) => (
+
+      <div
+        key={h.id}
+        style={{
+          borderBottom: "1px solid #2e333b",
+          padding: "10px 0",
+        }}
+      >
+
+        <p><b>Version:</b> v{h.version}</p>
+        <p><b>Summary:</b> {h.summary}</p>
+        <p>
+          <b>Edited By:</b> {h.editedBy.name} ({h.editedBy.email})
+        </p>
+        <p>
+          <b>Date:</b>{" "}
+          {new Date(h.createdAt).toLocaleString()}
+        </p>
+
+      </div>
+    ))}
+  </div>
+)}
+
     </div>
   );
 }

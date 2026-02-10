@@ -75,6 +75,7 @@ router.get("/", auth, async (req, res) => {
 
 
 // ================= UPDATE TEST CASE =================
+// Update Test Case with Versioning
 router.put("/:id", auth, async (req, res) => {
 
   const {
@@ -90,14 +91,38 @@ router.put("/:id", auth, async (req, res) => {
     environment,
     steps,
     expected,
+    summary // NEW
   } = req.body;
 
   try {
 
-    const updated = await prisma.testCase.update({
-      where: {
-        id: Number(req.params.id),
+    const id = Number(req.params.id);
+
+    // Get old data
+    const oldCase = await prisma.testCase.findUnique({
+      where: { id },
+    });
+
+    if (!oldCase) {
+      return res.status(404).json({ msg: "Not found" });
+    }
+
+    // Save old version
+    await prisma.testCaseVersion.create({
+      data: {
+        testCaseId: id,
+        version: oldCase.version,
+        summary: summary || "Updated test case",
+
+        snapshot: oldCase,
+
+        editedById: req.user.id,
       },
+    });
+
+    // Update main record
+    const updated = await prisma.testCase.update({
+      where: { id },
 
       data: {
         title,
@@ -112,6 +137,10 @@ router.put("/:id", auth, async (req, res) => {
         environment,
         steps,
         expected,
+
+        version: {
+          increment: 1,
+        },
       },
     });
 
@@ -191,6 +220,38 @@ router.delete("/:id", auth, async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
+  }
+});
+
+// Get Version History
+router.get("/:id/history", auth, async (req, res) => {
+
+  try {
+
+    const history = await prisma.testCaseVersion.findMany({
+      where: {
+        testCaseId: Number(req.params.id),
+      },
+
+      include: {
+        editedBy: {
+          select: {
+            name: true,
+            email: true,
+          },
+        },
+      },
+
+      orderBy: {
+        version: "desc",
+      },
+    });
+
+    res.json(history);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Failed to load history" });
   }
 });
 
