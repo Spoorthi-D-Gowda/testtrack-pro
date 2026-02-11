@@ -6,74 +6,155 @@ const prisma = new PrismaClient();
 
 const router = express.Router();
 
-// Create Test Case
+const generateTCId = async () => {
+  const count = await prisma.testCase.count();
+
+  const num = (count + 1).toString().padStart(5, "0");
+
+  return `TC-2026-${num}`;
+};
+
+
+// ================= CREATE TEST CASE =================
 router.post("/", auth, async (req, res) => {
+
   const {
     title,
     description,
+    module,
+    priority,
+    severity,
+    type,
+    status,
+    preconditions,
+    postconditions,
+    cleanupSteps,
+    testData,
+    environment,
+    tags,
+    estimatedTime,
+    automationStatus,
+    automationLink,
     steps,
     expected,
-    priority,
-    status,
   } = req.body;
 
   try {
+
+    // Get count for auto ID
+    const count = await prisma.testCase.count();
+
+    const year = new Date().getFullYear();
+
+    const testCaseId = `TC-${year}-${String(count + 1).padStart(4, "0")}`;
+
     const testCase = await prisma.testCase.create({
       data: {
+        testCaseId,
+
         title,
         description,
-        steps,
-        expected,
+        module,
+
         priority,
+        severity,
+        type,
         status,
+
+        preconditions,
+        postconditions,
+        cleanupSteps,
+
+        testData,
+        environment,
+
+        tags: tags || [],
+
+        estimatedTime,
+
+        automationStatus,
+        automationLink,
+
         userId: req.user.id,
       },
     });
 
     res.json(testCase);
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Get All Test Cases
+// ================= GET ALL TEST CASES =================
 router.get("/", auth, async (req, res) => {
+
   try {
+
     const cases = await prisma.testCase.findMany({
-      where: { userId: req.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+  where: {
+    userId: req.user.id,
+    isDeleted: false,
+  },
+
+  include: {
+    steps: true,
+  },
+
+  orderBy: {
+    createdAt: "desc",
+  },
+});
+
 
     res.json(cases);
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
 
-// Update Test Case
+
+// ================= UPDATE TEST CASE =================
 router.put("/:id", auth, async (req, res) => {
+
   const {
     title,
     description,
+    module,
+    priority,
+    severity,
+    type,
+    status,
+    preconditions,
+    testData,
+    environment,
     steps,
     expected,
-    priority,
-    status,
   } = req.body;
 
   try {
+
     const updated = await prisma.testCase.update({
       where: {
         id: Number(req.params.id),
       },
+
       data: {
         title,
         description,
+        module,
+        priority,
+        severity,
+        type,
+        status,
+        preconditions,
+        testData,
+        environment,
         steps,
         expected,
-        priority,
-        status,
       },
     });
 
@@ -86,17 +167,75 @@ router.put("/:id", auth, async (req, res) => {
 });
 
 
-// Delete Test Case
-router.delete("/:id", auth, async (req, res) => {
+// ================= CLONE TEST CASE =================
+router.post("/clone/:id", auth, async (req, res) => {
+
   try {
+
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ msg: "Unauthorized" });
+    }
+
+    const oldCase = await prisma.testCase.findUnique({
+      where: {
+        id: Number(req.params.id),
+      },
+    });
+
+    if (!oldCase) {
+      return res.status(404).json({ msg: "Test case not found" });
+    }
+
+    const cloned = await prisma.testCase.create({
+      data: {
+
+        title: oldCase.title + " (Copy)",
+        description: oldCase.description,
+        module: oldCase.module,
+        priority: oldCase.priority,
+        severity: oldCase.severity,
+        type: oldCase.type,
+        status: oldCase.status,
+        preconditions: oldCase.preconditions,
+        testData: oldCase.testData,
+        environment: oldCase.environment,
+        steps: oldCase.steps,
+        expected: oldCase.expected,
+
+        userId: req.user.id,
+      },
+    });
+
+    res.json(cloned);
+
+  } catch (err) {
+
+    console.error("CLONE ERROR:", err);
+
+    res.status(500).json({
+      msg: "Clone failed",
+      error: err.message,
+    });
+  }
+});
+
+
+// ================= DELETE TEST CASE =================
+router.delete("/:id", auth, async (req, res) => {
+
+  try {
+
     await prisma.testCase.delete({
       where: { id: Number(req.params.id) },
     });
 
     res.json({ msg: "Deleted successfully" });
+
   } catch (err) {
+    console.error(err);
     res.status(500).json({ msg: "Server error" });
   }
 });
+
 
 module.exports = router;

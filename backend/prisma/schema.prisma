@@ -8,46 +8,101 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      String
+  id          Int        @id @default(autoincrement())
+  name        String
+  email       String     @unique
+  password    String
+  role        String
+  createdAt   DateTime   @default(now())
+  resetExpiry DateTime?
+  resetToken  String?
+  bugs        Bug[]
+  testCases   TestCase[]
 
-  resetToken   String?   // 👈 ADD
-  resetExpiry  DateTime? // 👈 ADD
-
-testCases TestCase[]
-bugs Bug[]
-
-  createdAt DateTime @default(now())
+  testCaseVersions TestCaseVersion[]
 }
+
 model TestCase {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
+
+  testCaseId String @unique // Auto ID (TC-2026-0001)
+
   title       String
   description String
-  steps       String
-  expected    String
+  module      String
 
-  priority    String   // High / Medium / Low
-  status      String   // Pass / Fail / Pending
+  priority String
+  severity String
+  type     String
+  status   String
 
+  preconditions  String
+  postconditions String?
+  cleanupSteps   String?
 
-  createdAt   DateTime @default(now())
+  testData    String
+  environment String
+
+  tags String[] @default([])
+
+  estimatedTime String?
+
+  automationStatus String
+  automationLink   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  isDeleted Boolean @default(false)
+
+  version Int @default(1)
 
   userId Int
   user   User @relation(fields: [userId], references: [id])
+
+  steps            TestStep[]
+  testCaseVersions TestCaseVersion[]
 }
+
+model TestStep {
+  id         Int @id @default(autoincrement())
+  testCaseId Int
+
+  stepNo   Int
+  action   String
+  testData String?
+  expected String
+  actual   String?
+  status   String?
+  notes    String?
+
+  testCase TestCase @relation(fields: [testCaseId], references: [id])
+}
+
+model TestCaseVersion {
+  id         Int @id @default(autoincrement())
+  testCaseId Int
+
+  version Int
+  summary String
+
+  snapshot Json // old data stored
+
+  editedById Int
+  editedBy   User @relation(fields: [editedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  testCase TestCase @relation(fields: [testCaseId], references: [id])
+}
+
 model Bug {
   id          Int      @id @default(autoincrement())
   title       String
   description String
-  severity    String   // High / Medium / Low
-  status      String   // Open / In Progress / Closed
-
-  createdAt DateTime @default(now())
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  severity    String
+  status      String
+  createdAt   DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
 }
-
