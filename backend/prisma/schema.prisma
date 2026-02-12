@@ -18,35 +18,81 @@ model User {
   resetToken  String?
   bugs        Bug[]
   testCases   TestCase[]
+   versions   TestCaseVersion[] 
 }
 
 model TestCase {
   id          Int      @id @default(autoincrement())
 
+  testCaseId  String   @unique   // Auto ID (TC-2026-0001)
+
   title       String
   description String
-
-  module       String
-  priority     String
-  severity     String
-  type         String
-  status       String
+  module      String
+  expected    String   @default("")
+  priority    String
+  severity    String
+  type        String
+  status      String
 
   preconditions String
-  testData       String
-  environment    String
+  postconditions String?
+  cleanupSteps  String?
 
-  steps       String
-  expected    String
-  actual      String?
+  testData    String
+  environment String
 
-  version     Int      @default(1)
+  tags        String[] @default([])
+
+  estimatedTime String?
+
+  automationStatus String
+  automationLink   String?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  isDeleted   Boolean  @default(false)
+
+  version     Int      @default(1)
+
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
+
+  steps       TestStep[]
+  versions    TestCaseVersion[]
+}
+
+model TestCaseVersion {
+  id         Int @id @default(autoincrement())
+  testCaseId Int
+
+  version Int
+  summary String
+
+  snapshot Json // old data stored
+
+  editedById Int
+  editedBy   User @relation(fields: [editedById], references: [id])
+
+  createdAt DateTime @default(now())
+
+  testCase TestCase @relation(fields: [testCaseId], references: [id])
+}
+
+model TestStep {
+  id         Int      @id @default(autoincrement())
+  testCaseId Int
+
+  stepNo     Int
+  action     String
+  testData   String?
+  expected   String
+  actual     String?
+  status     String?
+  notes      String?
+
+  testCase   TestCase @relation(fields: [testCaseId], references: [id])
 }
 
 

@@ -1,16 +1,13 @@
 require("dotenv").config();
-const dashboardRoutes = require("./routes/dashboard");
+const express = require("express");
+const cors = require("cors");
 
+const dashboardRoutes = require("./routes/dashboard");
 const authMiddleware = require("./middleware/auth");
 const testCaseRoutes = require("./routes/testcase");
-const express = require("express");
-
 const authRoutes = require("./routes/auth");
 const bugRoutes = require("./routes/bug");
-
 const app = express();
-
-const cors = require("cors");
 const exportRoutes = require("./routes/export");
 app.use("/api/export", exportRoutes);
 
