@@ -18,7 +18,9 @@ model User {
   resetToken  String?
   bugs        Bug[]
   testCases   TestCase[]
-   versions   TestCaseVersion[] 
+  versions    TestCaseVersion[] 
+  templates   TestCaseTemplate[]
+
 }
 
 model TestCase {
@@ -97,6 +99,21 @@ model TestStep {
   executedAt DateTime?
 
   testCase   TestCase @relation(fields: [testCaseId], references: [id])
+}
+model TestCaseTemplate {
+  id          Int      @id @default(autoincrement())
+
+  name        String
+  description String?
+
+  module      String?
+
+  templateData Json
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime @default(now())
 }
 
 

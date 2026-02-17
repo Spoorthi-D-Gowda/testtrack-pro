@@ -26,6 +26,14 @@ export default function TestCases() {
   const [expected, setExpected] = useState("");
   const [priority, setPriority] = useState("Medium");
   const [status, setStatus] = useState("Pending");
+  const [templates, setTemplates] = useState([]);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [selectedCases, setSelectedCases] = useState([]);
+
+  const [importFile, setImportFile] = useState(null);
+  const [previewData, setPreviewData] = useState([]);
+  const [previewTotal, setPreviewTotal] = useState(0);
+  const [showPreview, setShowPreview] = useState(false);
 
   const token =
     localStorage.getItem("token") ||
@@ -115,7 +123,7 @@ const removeStep = (index) => {
 
       setEditId(null);
 
-      alert(res.data.msg || "Updated successfully ✅");
+      alert(res.data.msg || "Updated successfully ");
 
     } else {
       // CREATE
@@ -153,7 +161,7 @@ const removeStep = (index) => {
         }
       );
 
-      alert(res.data.msg || "Added successfully ✅");
+      alert(res.data.msg || "Added successfully ");
     }
 
     console.log("SERVER RESPONSE:", res.data);
@@ -235,9 +243,101 @@ const deleteCase = async (id) => {
       fetchCases();
 
     } catch (err) {
-      alert("Clone failed ❌");
+      alert("Clone failed ");
     }
   };
+
+  const selectAllCases = () => {
+
+  if (selectedCases.length === cases.length) {
+    setSelectedCases([]);
+  } else {
+    setSelectedCases(cases.map(tc => tc.id));
+  }
+
+};
+
+
+  const applyTemplate = async (templateId) => {
+
+  try {
+
+    const res = await axios.post(
+      `http://localhost:5000/api/testcases/templates/use/${templateId}`,
+      {},
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    alert(res.data.msg || "Created from template");
+
+    fetchCases();
+
+  } catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Failed to use template"
+    );
+
+  }
+
+};
+
+
+  const saveTemplate = async (id) => {
+
+  try {
+
+    const res = await axios.post(
+      `http://localhost:5000/api/testcases/${id}/template`,
+      {},
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    alert(res.data.msg || "Template saved successfully");
+
+  } catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Failed to save template"
+    );
+
+  }
+
+};
+
+const fetchTemplates = async () => {
+
+  try {
+
+    const res = await axios.get(
+      "http://localhost:5000/api/testcases/templates/all",
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    setTemplates(res.data);
+    setShowTemplates(true);
+
+  } catch (err) {
+
+    alert("Failed to load templates");
+
+  }
+
+};
 
   // ================= UPDATE STEP EXECUTION =================
 const updateStepExecution = async (stepId, stepData) => {
@@ -261,7 +361,7 @@ const updateStepExecution = async (stepId, stepData) => {
       }
     );
 
-    alert(res.data.msg || "Step updated successfully ✅");
+    alert(res.data.msg || "Step updated successfully ");
 
     fetchCases();
 
@@ -269,7 +369,7 @@ const updateStepExecution = async (stepId, stepData) => {
 
     alert(
       err.response?.data?.msg ||
-      "Failed to update step ❌"
+      "Failed to update step "
     );
 
   }
@@ -291,6 +391,19 @@ const handleExecutionChange = (stepId, field, value) => {
     },
 
   });
+
+};
+const toggleSelectCase = (id) => {
+
+  if (selectedCases.includes(id)) {
+    setSelectedCases(
+      selectedCases.filter(cid => cid !== id)
+    );
+  } else {
+    setSelectedCases(
+      [...selectedCases, id]
+    );
+  }
 
 };
 
@@ -342,10 +455,218 @@ const fetchHistory = async (id) => {
     setShowHistoryId(id);
 
   } catch (err) {
-    alert("Failed to load history ❌");
+    alert("Failed to load history ");
   }
 };
 
+const bulkDelete = async () => {
+
+  if (selectedCases.length === 0) {
+    alert("Select test cases first");
+    return;
+  }
+
+  try {
+
+    const res = await axios.post(
+      "http://localhost:5000/api/testcases/bulk/delete",
+      { ids: selectedCases },
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    alert(res.data.msg);
+
+    setSelectedCases([]);
+
+    fetchCases();
+
+  } catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Bulk delete failed"
+    );
+
+  }
+
+};
+const bulkStatusUpdate = async (status) => {
+
+  if (selectedCases.length === 0) {
+    alert("Select test cases first");
+    return;
+  }
+
+  try {
+
+    const res = await axios.post(
+      "http://localhost:5000/api/testcases/bulk/status",
+      {
+        ids: selectedCases,
+        status,
+      },
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    alert(res.data.msg);
+
+    setSelectedCases([]);
+
+    fetchCases();
+
+  } catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Bulk update failed"
+    );
+
+  }
+
+};
+const bulkExport = async () => {
+
+  if (selectedCases.length === 0) {
+    alert("Select test cases first");
+    return;
+  }
+
+  try {
+
+    const res = await axios.post(
+      "http://localhost:5000/api/testcases/bulk/export",
+      { ids: selectedCases },
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+        responseType: "blob",
+      }
+    );
+
+    const url = window.URL.createObjectURL(
+      new Blob([res.data])
+    );
+
+    const link = document.createElement("a");
+
+    link.href = url;
+
+    link.setAttribute(
+      "download",
+      "testcases.csv"
+    );
+
+    document.body.appendChild(link);
+
+    link.click();
+
+  } catch (err) {
+
+    alert("Export failed");
+
+  }
+
+};
+
+const confirmImport = async () => {
+
+  if (!importFile) {
+
+    alert("Select file first");
+    return;
+
+  }
+
+  const formData = new FormData();
+
+  formData.append("file", importFile);
+
+  try {
+
+    const res = await axios.post(
+      "http://localhost:5000/api/testcases/import",
+      formData,
+      {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+
+    alert(
+      `Import Completed\nCreated: ${res.data.created}\nFailed: ${res.data.failed}`
+    );
+
+    setShowPreview(false);
+    setImportFile(null);
+
+    fetchCases();
+
+  }
+
+  catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Import failed"
+    );
+
+  }
+
+};
+
+const previewImport = async () => {
+
+  if (!importFile) {
+
+    alert("Select file first");
+    return;
+
+  }
+
+  const formData = new FormData();
+
+  formData.append("file", importFile);
+
+  try {
+
+    const res = await axios.post(
+      "http://localhost:5000/api/testcases/import/preview",
+      formData,
+      {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+
+    setPreviewData(res.data.preview);
+    setPreviewTotal(res.data.total);
+    setShowPreview(true);
+
+  }
+
+  catch (err) {
+
+    alert(
+      err.response?.data?.msg ||
+      "Preview failed"
+    );
+
+  }
+
+};
 
   // ================= UI =================
   return (
@@ -368,6 +689,9 @@ const fetchHistory = async (id) => {
             Editing Mode: Update the test case
           </p>
         )}
+
+        
+        
 
         {/* FORM */}
         <form onSubmit={addCase}>
@@ -515,6 +839,61 @@ const fetchHistory = async (id) => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
+        
+        <div style={{ marginBottom: "15px" }}>
+
+  <input
+    type="file"
+    accept=".csv,.xlsx,.json"
+    onChange={(e) => setImportFile(e.target.files[0])}
+  />
+
+  <button
+    type="button"
+    onClick={previewImport}
+    style={{
+      marginLeft: "10px",
+      background: "#2563eb"
+    }}
+  >
+    Preview Import
+  </button>
+
+</div>
+
+        <button
+  onClick={fetchTemplates}
+  style={{
+    background: "#7c3aed",
+    marginBottom: "15px",
+  }}
+>
+  View Templates
+</button>
+
+<div style={{ marginBottom: "15px" }}>
+
+  <button onClick={selectAllCases}>
+    Select All
+  </button>
+
+  <button onClick={bulkDelete}>
+    Bulk Delete
+  </button>
+
+  <button onClick={() => bulkStatusUpdate("Approved")}>
+    Mark Approved
+  </button>
+
+  <button onClick={() => bulkStatusUpdate("Draft")}>
+    Mark Draft
+  </button>
+
+  <button onClick={bulkExport}>
+    Export CSV
+  </button>
+
+</div>
 
         {/* LIST */}
         <h3>My Test Cases</h3>
@@ -535,6 +914,11 @@ const fetchHistory = async (id) => {
                 borderRadius: "6px",
               }}
             >
+              <input
+  type="checkbox"
+  checked={selectedCases.includes(tc.id)}
+  onChange={() => toggleSelectCase(tc.id)}
+/>
 
               <h4>
   {tc.testCaseId} — {tc.title}
@@ -648,7 +1032,7 @@ const fetchHistory = async (id) => {
       }
       style={{
         marginTop: "6px",
-        background: "#16a34a",
+        background: "#0d1975",
       }}
     >
       Update Step
@@ -670,6 +1054,7 @@ const fetchHistory = async (id) => {
     flexWrap: "wrap",
   }}
 >
+
   <button
     onClick={() => editCase(tc)}
     className="action-btn"
@@ -683,6 +1068,14 @@ const fetchHistory = async (id) => {
   >
     Clone
   </button>
+
+  <button
+  onClick={() => saveTemplate(tc.id)}
+  className="action-btn"
+>
+  Save Template
+</button>
+
 
   <button
     onClick={() => fetchHistory(tc.id)}
@@ -711,9 +1104,9 @@ const fetchHistory = async (id) => {
     style={{
       marginTop: "25px",
       padding: "15px",
-      border: "1px solid #334155",
+      border: "1px solid #6a87af",
       borderRadius: "8px",
-      background: "#020617",
+      background: "#d3d6e6",
     }}
   >
 
@@ -757,6 +1150,169 @@ const fetchHistory = async (id) => {
   </div>
 )}
 
+{showTemplates && (
+
+  <div
+    style={{
+      marginTop: "25px",
+      padding: "15px",
+      border: "1px solid #334155",
+      borderRadius: "8px",
+      background: "#dfe3f5",
+    }}
+  >
+
+    <h3>Templates</h3>
+
+    <button
+      onClick={() => setShowTemplates(false)}
+      style={{
+        float: "right",
+        background: "white",
+        color: "#38bdf8",
+      }}
+    >
+      Close
+    </button>
+
+    {templates.length === 0 &&
+      <p>No templates available</p>
+    }
+
+    {templates.map(template => (
+
+      <div
+        key={template.id}
+        style={{
+          borderBottom: "1px solid #73839a",
+          padding: "10px",
+        }}
+      >
+
+        <p>
+          <b>{template.name}</b>
+        </p>
+
+        <button
+          onClick={() =>
+            applyTemplate(template.id)
+          }
+          className="action-btn"
+        >
+          Use Template
+        </button>
+
+      </div>
+
+    ))}
+
+  </div>
+
+)}
+
+{showPreview && (
+
+  <div
+    style={{
+      marginTop: "20px",
+      padding: "15px",
+      border: "1px solid #334155",
+      borderRadius: "8px",
+      background: "#f1f5f9"
+    }}
+  >
+
+    <h3>Import Preview</h3>
+
+    <p>Total records: {previewTotal}</p>
+
+    {previewData.length === 0 && (
+      <p>No data</p>
+    )}
+
+    {previewData.length > 0 && (
+
+      <table
+        border="1"
+        cellPadding="6"
+        style={{
+          borderCollapse: "collapse",
+          width: "100%",
+          marginBottom: "10px"
+        }}
+      >
+
+        <thead>
+
+          <tr>
+
+            {Object.keys(previewData[0]).map(key => (
+
+              <th key={key}>{key}</th>
+
+            ))}
+
+          </tr>
+
+        </thead>
+            <tbody>
+
+  {previewData.map((row, i) => (
+
+    <tr key={i}>
+
+      {Object.values(row).map((val, j) => (
+
+        <td key={j}>
+
+          {typeof val === "object" && val !== null
+            ? Array.isArray(val)
+              ? val.map((item, idx) => (
+                  <div key={idx}>
+                    {typeof item === "object"
+                      ? `${item.action || ""} → ${item.expected || ""}`
+                      : item}
+                  </div>
+                ))
+              : JSON.stringify(val)
+            : val}
+
+        </td>
+
+      ))}
+
+    </tr>
+
+  ))}
+
+</tbody>
+
+      </table>
+
+    )}
+
+    <button
+      onClick={confirmImport}
+      style={{
+        background: "#16a34a",
+        marginRight: "10px"
+      }}
+    >
+      Confirm Import
+    </button>
+
+    <button
+      onClick={() => setShowPreview(false)}
+      style={{
+        background: "#dc2626"
+      }}
+    >
+      Cancel
+    </button>
+
+  </div>
+
+)}
 
     </div>
   );
