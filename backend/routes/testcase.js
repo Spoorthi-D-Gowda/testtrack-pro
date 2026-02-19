@@ -1,6 +1,9 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const auth = require("../middleware/auth");
+const admin = require("../middleware/admin");
+const role = require("../middleware/role");
+
 
 const prisma = new PrismaClient();
 
@@ -15,7 +18,7 @@ const generateTCId = async () => {
 };
 
 // ================= CREATE TEST CASE =================
-router.post("/", auth, async (req, res) => {
+router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
   try {
 
     const {
@@ -215,20 +218,24 @@ router.post("/", auth, async (req, res) => {
 
 
 // ================= GET ALL TEST CASES =================
-router.get("/", auth, async (req, res) => {
+router.get("/", auth,  role(["tester", "admin"]),async (req, res) => {
 
   try {
 
+const showDeleted = req.query.deleted === "true";
 const cases = await prisma.testCase.findMany({
   where: {
-    userId: req.user.id,
-    isDeleted: false,
+    isDeleted: showDeleted ? true : false,
   },
-
   include: {
     steps: true,
+    user: {
+      select: {
+        name: true,
+        email: true,
+      }
+    }
   },
-
   orderBy: {
     createdAt: "desc",
   },
@@ -244,7 +251,7 @@ const cases = await prisma.testCase.findMany({
   }
 });
 
-router.put("/:id", auth, async (req, res) => {
+router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
     const id = Number(req.params.id);
@@ -353,7 +360,7 @@ router.put("/:id", auth, async (req, res) => {
 );
 
 // Clone Test Case (With Steps + All Fields)
-  router.post("/clone/:id", auth, async (req, res) => {
+  router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
     const id = Number(req.params.id);
@@ -371,7 +378,9 @@ router.put("/:id", auth, async (req, res) => {
     }
 
     // Generate new TestCaseId
-    const newTcId = `TC-${Date.now()}`;
+    const newTcId =
+      `TC-${year}-${String(count + 1).padStart(5, "0")}`;
+
 
     // Create cloned test case
     const cloned = await prisma.testCase.create({
@@ -435,7 +444,7 @@ router.put("/:id", auth, async (req, res) => {
 });
 
 // ================= DELETE TEST CASE =================
-router.delete("/:id", auth, async (req, res) => {
+router.delete("/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
     await prisma.testCase.update({
@@ -455,7 +464,7 @@ router.delete("/:id", auth, async (req, res) => {
   }
 });
 // Get Version History
-router.get("/:id/history", auth, async (req, res) => {
+router.get("/:id/history", auth, role(["tester", "admin"]), async (req, res) => {
 
   try {
 
@@ -485,9 +494,96 @@ router.get("/:id/history", auth, async (req, res) => {
     res.status(500).json({ msg: "Failed to load history" });
   }
 });
+// ================= RESTORE TEST CASE (ADMIN ONLY) =================
+router.put("/:id/restore", auth, role(["admin"]), async (req, res) => {
+  try {
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        msg: "Access denied. Admin only."
+      });
+    }
+
+    const id = Number(req.params.id);
+
+    const existing = await prisma.testCase.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        msg: "Test case not found"
+      });
+    }
+
+    await prisma.testCase.update({
+      where: { id },
+      data: { isDeleted: false }
+    });
+
+    res.json({
+      msg: "Test case restored successfully"
+    });
+
+  } catch (err) {
+    console.error("RESTORE ERROR:", err);
+    res.status(500).json({
+      msg: "Failed to restore test case"
+    });
+  }
+});
+// ================= PERMANENT DELETE (ADMIN ONLY) =================
+router.delete("/:id/permanent", auth, role(["admin"]), async (req, res) => {
+  try {
+
+    if (req.user.role !== "admin") {
+      return res.status(403).json({
+        msg: "Access denied. Admin only."
+      });
+    }
+
+    const id = Number(req.params.id);
+
+    const existing = await prisma.testCase.findUnique({
+      where: { id }
+    });
+
+    if (!existing) {
+      return res.status(404).json({
+        msg: "Test case not found"
+      });
+    }
+
+    // Delete steps first (foreign key)
+    await prisma.testStep.deleteMany({
+      where: { testCaseId: id }
+    });
+
+    // Delete versions
+    await prisma.testCaseVersion.deleteMany({
+      where: { testCaseId: id }
+    });
+
+    // Delete test case
+    await prisma.testCase.delete({
+      where: { id }
+    });
+
+    res.json({
+      msg: "Test case permanently deleted"
+    });
+
+  } catch (err) {
+    console.error("PERMANENT DELETE ERROR:", err);
+    res.status(500).json({
+      msg: "Failed to permanently delete"
+    });
+  }
+});
+
 
 // ================= UPDATE STEP EXECUTION =================
-router.put("/step/:stepId", auth, async (req, res) => {
+router.put("/step/:stepId", auth, role(["tester", "admin"]), async (req, res) => {
 
   try {
 
@@ -554,6 +650,291 @@ router.put("/step/:stepId", auth, async (req, res) => {
 
 });
 
+// ================= SAVE AS TEMPLATE =================
+router.post("/:id/template", auth, role(["tester", "admin"]), async (req, res) => {
+  try {
+
+    const id = Number(req.params.id);
+
+    const testCase = await prisma.testCase.findUnique({
+      where: { id },
+      include: { steps: true },
+    });
+
+    if (!testCase) {
+      return res.status(404).json({
+        msg: "Test case not found"
+      });
+    }
+
+    const template = await prisma.testCaseTemplate.create({
+      data: {
+        name: testCase.title,
+        description: testCase.description,
+        module: testCase.module,
+
+        templateData: testCase,
+
+        createdById: req.user.id,
+      },
+    });
+
+    res.json({
+      msg: "Template created successfully",
+      template,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      msg: "Failed to create template",
+    });
+
+  }
+});
+
+
+// ================= GET ALL TEMPLATES =================
+router.get("/templates/all", auth, role(["tester", "admin"]), async (req, res) => {
+  try {
+
+    const templates = await prisma.testCaseTemplate.findMany({
+      include: {
+        createdBy: {
+          select: {
+            name: true,
+            email: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc",
+      }
+    });
+
+    res.json(templates);
+
+  } catch (err) {
+    res.status(500).json({
+      msg: "Failed to load templates",
+    });
+  }
+});
+
+// ================= CREATE TESTCASE FROM TEMPLATE =================
+router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async (req, res) => {
+
+  try {
+
+    const templateId = Number(req.params.templateId);
+
+    const template = await prisma.testCaseTemplate.findUnique({
+      where: { id: templateId },
+    });
+
+    if (!template) {
+      return res.status(404).json({
+        msg: "Template not found",
+      });
+    }
+
+    const data = template.templateData;
+
+    const count = await prisma.testCase.count();
+
+    const year = new Date().getFullYear();
+
+    const testCaseId =
+      `TC-${year}-${String(count + 1).padStart(5, "0")}`;
+
+    const newTestCase =
+      await prisma.testCase.create({
+
+        data: {
+
+          testCaseId,
+
+          title: data.title,
+          description: data.description,
+          module: data.module,
+          priority: data.priority,
+          severity: data.severity,
+          type: data.type,
+
+          status: "Draft",
+
+          preconditions: data.preconditions,
+          postconditions: data.postconditions,
+          cleanupSteps: data.cleanupSteps,
+
+          testData: data.testData,
+          environment: data.environment,
+
+          tags: data.tags,
+
+          estimatedTime: data.estimatedTime,
+
+          automationStatus: data.automationStatus,
+          automationLink: data.automationLink,
+
+          userId: req.user.id,
+
+          steps: {
+            create: data.steps.map(s => ({
+              stepNo: s.stepNo,
+              action: s.action,
+              testData: s.testData,
+              expected: s.expected,
+              status: "Pending",
+              actual: "",
+              notes: "",
+            })),
+          },
+        },
+      });
+
+    res.json({
+      msg: "Test case created from template",
+      data: newTestCase,
+    });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      msg: "Failed to create from template",
+    });
+
+  }
+
+});
+// ================= BULK DELETE =================
+router.post("/bulk/delete", auth, role(["tester", "admin"]), async (req, res) => {
+  try {
+
+    const { ids } = req.body;
+
+    if (!ids || ids.length === 0) {
+      return res.status(400).json({
+        msg: "No test cases selected",
+      });
+    }
+
+    await prisma.testCase.updateMany({
+      where: {
+        id: { in: ids },
+        userId: req.user.id,
+      },
+      data: {
+        isDeleted: true,
+      },
+    });
+
+    res.json({
+      msg: `${ids.length} test cases deleted successfully`,
+    });
+
+  } catch (err) {
+
+    console.error("BULK DELETE ERROR:", err);
+
+    res.status(500).json({
+      msg: "Bulk delete failed",
+    });
+
+  }
+});
+
+// ================= BULK STATUS UPDATE =================
+router.post("/bulk/status", auth, role(["tester", "admin"]), async (req, res) => {
+  try {
+
+    const { ids, status } = req.body;
+
+    if (!ids || ids.length === 0) {
+      return res.status(400).json({
+        msg: "No test cases selected",
+      });
+    }
+
+    await prisma.testCase.updateMany({
+      where: {
+        id: { in: ids },
+        userId: req.user.id,
+      },
+      data: {
+        status,
+      },
+    });
+
+    res.json({
+      msg: `${ids.length} test cases updated to ${status}`,
+    });
+
+  } catch (err) {
+
+    console.error("BULK STATUS ERROR:", err);
+
+    res.status(500).json({
+      msg: "Bulk update failed",
+    });
+
+  }
+});
+
+const { Parser } = require("json2csv");
+
+router.post("/bulk/export", auth, role(["tester", "admin"]), async (req, res) => {
+
+  try {
+
+    const { ids } = req.body;
+
+    const testCases = await prisma.testCase.findMany({
+      where: {
+        id: { in: ids },
+        userId: req.user.id,
+        isDeleted: false,
+      },
+      include: {
+        steps: true,
+      },
+    });
+
+    const parser = new Parser();
+
+    const csv = parser.parse(
+      testCases.map(tc => ({
+        TestCaseID: tc.testCaseId,
+        Title: tc.title,
+        Module: tc.module,
+        Priority: tc.priority,
+        Severity: tc.severity,
+        Status: tc.status,
+        CreatedAt: tc.createdAt,
+      }))
+    );
+
+    res.header("Content-Type", "text/csv");
+
+    res.attachment("testcases.csv");
+
+    return res.send(csv);
+
+  } catch (err) {
+
+    console.error("EXPORT ERROR:", err);
+
+    res.status(500).json({
+      msg: "Export failed",
+    });
+
+  }
+
+});
 
 
  module.exports = router;

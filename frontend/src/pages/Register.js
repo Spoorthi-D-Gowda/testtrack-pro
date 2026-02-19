@@ -121,6 +121,7 @@ export default function Register() {
           >
             <option value="tester">Tester</option>
             <option value="developer">Developer</option>
+             <option value="admin">Admin</option>
           </select>
 
           <button type="submit">Register</button>

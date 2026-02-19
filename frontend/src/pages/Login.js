@@ -48,6 +48,8 @@ const [remember, setRemember] = useState(false);
 } else {
   sessionStorage.setItem("token", res.data.token);
 }
+localStorage.setItem("role", res.data.user.role);
+localStorage.setItem("userId", res.data.user.id);
 
 
       setSuccess("Login successful! Redirecting... ");
