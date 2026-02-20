@@ -261,34 +261,38 @@ const deleteCase = async (id) => {
 };
 
   // ================= CLONE =================
-  const cloneCase = async (id) => {
-    try {
-      await axios.post(
-        `http://localhost:5000/api/testcases/clone/${id}`,
-        {},
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+const cloneCase = async (id, includeAttachments) => {
+  try {
+    await axios.post(
+      `http://localhost:5000/api/testcases/clone/${id}`,
+      { includeAttachments },
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
 
-      fetchCases();
+    fetchCases();
 
-    } catch (err) {
-      alert("Clone failed ");
-    }
-  };
+  } catch (err) {
+    alert("Clone failed ");
+  }
+};
 
-  const selectAllCases = () => {
 
-  if (selectedCases.length === cases.length) {
+const selectAllCases = () => {
+
+  const activeCases = cases.active;
+
+  if (selectedCases.length === activeCases.length) {
     setSelectedCases([]);
   } else {
-    setSelectedCases(cases.map(tc => tc.id));
+    setSelectedCases(activeCases.map(tc => tc.id));
   }
 
 };
+
 
 
   const applyTemplate = async (templateId) => {
@@ -492,13 +496,18 @@ const fetchHistory = async (id) => {
   }
 };
 
-const bulkDelete = async () => {
+ const bulkDelete = async () => {
 
   if (selectedCases.length === 0) {
     alert("Select test cases first");
     return;
   }
 
+  if (!window.confirm(
+    `Are you sure you want to delete ${selectedCases.length} test cases?`
+  )) {
+    return;
+  }
   try {
 
     const res = await axios.post(
@@ -527,6 +536,7 @@ const bulkDelete = async () => {
   }
 
 };
+
 const bulkStatusUpdate = async (status) => {
 
   if (selectedCases.length === 0) {
@@ -565,6 +575,7 @@ const bulkStatusUpdate = async (status) => {
   }
 
 };
+
 const bulkExport = async () => {
 
   if (selectedCases.length === 0) {
@@ -753,7 +764,34 @@ const permanentDelete = async (id) => {
   }
 
 };
+const uploadAttachment = async (id, file) => {
 
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    await axios.post(
+      `http://localhost:5000/api/testcases/${id}/upload`,
+      formData,
+      {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    alert("File uploaded successfully");
+
+    fetchCases(); // refresh list
+
+  } catch (err) {
+    alert("Upload failed");
+    console.error(err);
+  }
+};
 
   // ================= UI =================
   return (
@@ -994,7 +1032,7 @@ const permanentDelete = async (id) => {
         {/* LIST */}
         <h3>My Test Cases</h3>
 
-        {cases.length === 0 && <p>No test cases yet</p>}
+        {cases.active.length === 0 && <p>No test cases yet</p>}
 
         {cases.active
           .filter((tc) =>
@@ -1018,6 +1056,16 @@ const permanentDelete = async (id) => {
 
               <h4>
   {tc.testCaseId} — {tc.title}
+  {/* Attachment Upload */}
+<div style={{ marginTop: "10px" }}>
+  <input
+    type="file"
+    accept="image/*,.pdf,video/mp4"
+    onChange={(e) =>
+      uploadAttachment(tc.id, e.target.files[0])
+    }
+  />
+</div>
 </h4>
 <p style={{ fontSize: "12px", color: "#64748b" }}>
   Created by: {tc.user?.name} ({tc.user?.email})
@@ -1161,12 +1209,20 @@ const permanentDelete = async (id) => {
     Edit
   </button>
 
-  <button
-    onClick={() => cloneCase(tc.id)}
-    className="action-btn"
-  >
-    Clone
-  </button>
+<button
+  onClick={() => cloneCase(tc.id, true)}
+  className="action-btn"
+>
+  Clone (With Attachments)
+</button>
+
+<button
+  onClick={() => cloneCase(tc.id, false)}
+  className="action-btn"
+>
+  Clone (Without Attachments)
+</button>
+
 
 {(role === "tester" || role === "admin") && (
 <button onClick={() => saveTemplate(tc.id)}>
