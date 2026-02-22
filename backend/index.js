@@ -35,11 +35,33 @@ app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");
 });
-app.get("/api/profile", authMiddleware, (req, res) => {
-  res.json({
-    msg: "Welcome to protected route ",
-    user: req.user,
-  });
+
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
+app.get("/api/profile", authMiddleware, async (req, res) => {
+  try {
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.json({ user });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
+  }
 });
 
 app.listen(5000, () => {

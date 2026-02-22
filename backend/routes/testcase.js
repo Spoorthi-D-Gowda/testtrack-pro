@@ -10,12 +10,202 @@ const prisma = new PrismaClient();
 const router = express.Router();
 
 const generateTCId = async () => {
-  const count = await prisma.testCase.count();
 
-  const num = (count + 1).toString().padStart(5, "0");
+  const lastCase = await prisma.testCase.findFirst({
+    orderBy: {
+      id: "desc"
+    }
+  });
 
-  return `TC-2026-${num}`;
+  const year = new Date().getFullYear();
+
+  if (!lastCase) {
+    return `TC-${year}-00001`;
+  }
+
+  const lastNumber = parseInt(
+    lastCase.testCaseId.split("-")[2]
+  );
+
+  const newNumber = String(lastNumber + 1).padStart(5, "0");
+
+  return `TC-${year}-${newNumber}`;
 };
+
+const multer = require("multer");
+const path = require("path");
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/testcases/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueName =
+      Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+  fileFilter: (req, file, cb) => {
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "application/pdf",
+      "video/mp4",
+    ];
+
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid file type"));
+    }
+  },
+});
+
+const importUpload = multer({
+  storage,
+  fileFilter: (req, file, cb) => {
+
+    const allowedImportTypes = [
+      "text/csv",
+      "application/json",
+      "application/vnd.ms-excel"
+    ];
+
+    if (allowedImportTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Invalid import file type"));
+    }
+  }
+});
+
+
+router.post(
+  "/:id/upload",
+  auth,
+  role(["tester", "admin"]),
+  upload.single("file"),
+  async (req, res) => {
+    try {
+
+      const id = Number(req.params.id);
+
+      const attachment = await prisma.attachment.create({
+        data: {
+          fileName: req.file.originalname,
+          filePath: req.file.path,
+          fileType: req.file.mimetype,
+          testCaseId: id,
+        },
+      });
+
+      res.json({
+        msg: "File uploaded successfully",
+        data: attachment,
+      });
+
+    } catch (err) {
+      res.status(500).json({ msg: "Upload failed" });
+    }
+  }
+);
+const csv = require("csv-parser");
+const fs = require("fs");
+
+router.post(
+  "/import/preview",
+  auth,
+  role(["tester", "admin"]),
+  importUpload.single("file"),
+  async (req, res) => {
+    try {
+
+      const results = [];
+
+      fs.createReadStream(req.file.path)
+        .pipe(csv())
+        .on("data", (data) => results.push(data))
+        .on("end", () => {
+
+          res.json({
+            total: results.length,
+            preview: results.slice(0, 10), // show first 10 rows
+          });
+
+        });
+
+    } catch (err) {
+      res.status(500).json({
+        msg: "Preview failed",
+      });
+    }
+  }
+);
+router.post(
+  "/import",
+  auth,
+  role(["tester", "admin"]),
+  importUpload.single("file"),
+  async (req, res) => {
+    try {
+
+      const results = [];
+
+      const csv = require("csv-parser");
+      const fs = require("fs");
+
+      fs.createReadStream(req.file.path)
+        .pipe(csv())
+        .on("data", (data) => results.push(data))
+        .on("end", async () => {
+
+          for (const row of results) {
+
+            const newTcId = await generateTCId();
+
+            await prisma.testCase.create({
+              data: {
+                testCaseId: newTcId,
+                title: row.title || "Untitled",
+                description: row.description || "",
+                module: row.module || "",
+                priority: row.priority || "Medium",
+                severity: row.severity || "Low",
+                type: row.type || "Functional",
+                status: "Draft",
+
+                preconditions: row.preconditions || "",
+                testData: row.testData || "",
+                environment: row.environment || "",
+
+                automationStatus: "Manual",
+
+                userId: req.user.id,
+              },
+            });
+
+          }
+
+          res.json({
+  created: results.length,
+  failed: 0
+});
+
+
+        });
+
+    } catch (err) {
+      console.error("IMPORT ERROR:", err);
+      res.status(500).json({
+        msg: "Import failed",
+      });
+    }
+  }
+);
 
 // ================= CREATE TEST CASE =================
 router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
@@ -226,9 +416,11 @@ const showDeleted = req.query.deleted === "true";
 const cases = await prisma.testCase.findMany({
   where: {
     isDeleted: showDeleted ? true : false,
+    
   },
   include: {
     steps: true,
+    attachments: true,
     user: {
       select: {
         name: true,
@@ -360,16 +552,18 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
 );
 
 // Clone Test Case (With Steps + All Fields)
-  router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
+router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
     const id = Number(req.params.id);
+    const { includeAttachments } = req.body;
 
-    // Get old test case with steps
+    // Get old test case
     const oldCase = await prisma.testCase.findUnique({
       where: { id },
       include: {
         steps: true,
+        attachments: true,
       },
     });
 
@@ -378,23 +572,20 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
     }
 
     // Generate new TestCaseId
-    const newTcId =
-      `TC-${year}-${String(count + 1).padStart(5, "0")}`;
+    const newTcId = await generateTCId();
 
 
-    // Create cloned test case
     const cloned = await prisma.testCase.create({
       data: {
+
         testCaseId: newTcId,
 
         title: oldCase.title + " (Copy)",
         description: oldCase.description,
         module: oldCase.module,
-
         priority: oldCase.priority,
         severity: oldCase.severity,
         type: oldCase.type,
-
         status: "Draft",
 
         preconditions: oldCase.preconditions,
@@ -403,31 +594,41 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
 
         testData: oldCase.testData,
         environment: oldCase.environment,
-
         tags: oldCase.tags || [],
         estimatedTime: oldCase.estimatedTime,
 
-        automationStatus: oldCase.automationStatus || "Not Automated",
+        automationStatus: oldCase.automationStatus,
         automationLink: oldCase.automationLink,
 
         expected: oldCase.expected,
-
         version: 1,
-
         userId: req.user.id,
 
-        // Clone steps
+        // Clone Steps
         steps: {
           create: oldCase.steps.map((s) => ({
             stepNo: s.stepNo,
             action: s.action,
             testData: s.testData,
             expected: s.expected,
-            actual: s.actual,
-            status: s.status,
-            notes: s.notes,
+            status: "Pending",
+            actual: "",
+            notes: "",
           })),
         },
+
+        // Clone Attachments (Conditional)
+        attachments: includeAttachments && oldCase.attachments.length > 0
+  ? {
+      create: oldCase.attachments.map(a => ({
+        fileName: a.fileName,
+        filePath: a.filePath,
+        fileType: a.fileType,
+      }))
+    }
+  : undefined,
+
+
       },
     });
 
@@ -435,13 +636,13 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
 
   } catch (err) {
     console.error("CLONE ERROR:", err);
-
     res.status(500).json({
       msg: "Clone failed",
       error: err.message,
     });
   }
 });
+
 
 // ================= DELETE TEST CASE =================
 router.delete("/:id", auth, role(["tester", "admin"]), async (req, res) => {
@@ -824,14 +1025,15 @@ router.post("/bulk/delete", auth, role(["tester", "admin"]), async (req, res) =>
     }
 
     await prisma.testCase.updateMany({
-      where: {
-        id: { in: ids },
-        userId: req.user.id,
-      },
-      data: {
-        isDeleted: true,
-      },
-    });
+  where: {
+    id: { in: ids },
+    ...(req.user.role !== "admin" && { userId: req.user.id }),
+  },
+  data: {
+    isDeleted: true,
+  },
+});
+
 
     res.json({
       msg: `${ids.length} test cases deleted successfully`,

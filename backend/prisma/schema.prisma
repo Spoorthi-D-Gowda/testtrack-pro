@@ -8,86 +8,67 @@ datasource db {
 }
 
 model User {
-  id          Int        @id @default(autoincrement())
+  id          Int                @id @default(autoincrement())
   name        String
-  email       String     @unique
+  email       String             @unique
   password    String
   role        String
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime           @default(now())
   resetExpiry DateTime?
   resetToken  String?
   bugs        Bug[]
   testCases   TestCase[]
-  versions    TestCaseVersion[] 
   templates   TestCaseTemplate[]
-
-}
-
-model TestCase {
-  id          Int      @id @default(autoincrement())
-
-  testCaseId  String   @unique   // Auto ID (TC-2026-0001)
-
-  title       String
-  description String
-  module      String
-  expected    String   @default("")
-  priority    String
-  severity    String
-  type        String
-  status      String
-
-  preconditions String
-  postconditions String?
-  cleanupSteps  String?
-
-  testData    String
-  environment String
-
-  tags        String[] @default([])
-
-  estimatedTime String?
-
-  automationStatus String
-  automationLink   String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  isDeleted   Boolean  @default(false)
-
-  version     Int      @default(1)
-
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-
-  updatedById Int?
-
-  steps       TestStep[]
   versions    TestCaseVersion[]
 }
 
+model TestCase {
+  id               Int               @id @default(autoincrement())
+  title            String
+  description      String
+  expected         String            @default("")
+  priority         String
+  status           String
+  createdAt        DateTime          @default(now())
+  userId           Int
+  environment      String
+  module           String
+  preconditions    String
+  severity         String
+  testData         String
+  type             String
+  updatedAt        DateTime          @updatedAt
+  version          Int               @default(1)
+  automationLink   String?
+  automationStatus String
+  cleanupSteps     String?
+  estimatedTime    String?
+  isDeleted        Boolean           @default(false)
+  postconditions   String?
+  tags             String[]          @default([])
+  testCaseId       String            @unique
+  updatedById      Int?
+  user             User              @relation(fields: [userId], references: [id])
+  versions         TestCaseVersion[]
+  steps            TestStep[]
+  attachments      Attachment[]
+}
+
 model TestCaseVersion {
-  id         Int @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   testCaseId Int
-
-  version Int
-  summary String
-
-  snapshot Json // old data stored
-
+  version    Int
+  summary    String
+  snapshot   Json
   editedById Int
-  editedBy   User @relation(fields: [editedById], references: [id])
-
-  createdAt DateTime @default(now())
-
-  testCase TestCase @relation(fields: [testCaseId], references: [id])
+  createdAt  DateTime @default(now())
+  editedBy   User     @relation(fields: [editedById], references: [id])
+  testCase   TestCase @relation(fields: [testCaseId], references: [id])
 }
 
 model TestStep {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   testCaseId Int
-
   stepNo     Int
   action     String
   testData   String?
@@ -95,27 +76,20 @@ model TestStep {
   actual     String?
   status     String?
   notes      String?
-
   executedAt DateTime?
-
-  testCase   TestCase @relation(fields: [testCaseId], references: [id])
+  testCase   TestCase  @relation(fields: [testCaseId], references: [id])
 }
+
 model TestCaseTemplate {
-  id          Int      @id @default(autoincrement())
-
-  name        String
-  description String?
-
-  module      String?
-
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  module       String?
   templateData Json
-
-  createdById Int
-  createdBy   User @relation(fields: [createdById], references: [id])
-
-  createdAt   DateTime @default(now())
+  createdById  Int
+  createdAt    DateTime @default(now())
+  createdBy    User     @relation(fields: [createdById], references: [id])
 }
-
 
 model Bug {
   id          Int      @id @default(autoincrement())
@@ -126,4 +100,14 @@ model Bug {
   createdAt   DateTime @default(now())
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
- }
+}
+
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  filePath   String
+  fileType   String
+  uploadedAt DateTime @default(now())
+  testCaseId Int
+  TestCase   TestCase @relation(fields: [testCaseId], references: [id])
+}

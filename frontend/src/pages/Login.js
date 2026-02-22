@@ -124,7 +124,7 @@ localStorage.setItem("userId", res.data.user.id);
 </div>
 
 
-          <button type="submit">Login</button>
+          <button type="submit" className="login-btn">Login</button>
 
         </form>
 
