@@ -12,6 +12,8 @@ const app = express();
 
 const cors = require("cors");
 const exportRoutes = require("./routes/export");
+const suiteRoutes = require("./routes/suite");
+app.use("/api/suites", suiteRoutes);
 app.use("/api/export", exportRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);

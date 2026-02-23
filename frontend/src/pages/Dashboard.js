@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
-
+import TestCasesManager from "./TestCases";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+ ;
+  const [activeSection, setActiveSection] = useState("dashboard");
+  const [testCaseTab, setTestCaseTab] = useState("create");
+  const [showTestCaseMenu, setShowTestCaseMenu] = useState(false);
+
   const navigate = useNavigate();
 
   const role =
@@ -15,18 +20,17 @@ export default function Dashboard() {
     window.open("http://localhost:5000/api/export/report");
   };
 
-const logout = useCallback(() => {
-  localStorage.removeItem("token");
-  localStorage.removeItem("role");
-  localStorage.removeItem("userId");
+  const logout = useCallback(() => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("userId");
 
-  sessionStorage.removeItem("token");
-  sessionStorage.removeItem("role");
-  sessionStorage.removeItem("userId");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
+    sessionStorage.removeItem("userId");
 
-  navigate("/");
-}, [navigate]);
-
+    navigate("/");
+  }, [navigate]);
 
   useEffect(() => {
     const token =
@@ -46,68 +50,188 @@ const logout = useCallback(() => {
       })
       .then((res) => {
         setUser(res.data.user);
-      })
-      .catch(() => {
-        logout();
-      });
 
-  }, [navigate, logout]); // ✅ Add logout here
+        // Fetch recent testcases
+        return axios.get(
+          "http://localhost:5000/api/testcases",
+          {
+            headers: { "x-auth-token": token },
+          }
+        );
+      })
+      .then((res) => {
+  setUser(res.data.user);
+})
+     .catch((err) => {
+  console.error("FULL ERROR:", err);
+  console.error("RESPONSE:", err.response);
+  console.error("REQUEST:", err.request);
+  logout();
+});
+
+  }, [navigate, logout]);
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2>Dashboard</h2>
+    <div className="dashboard-wrapper">
 
-        {user && (
-          <>
-            <p>User ID: {user.id}</p>
-            <p>Role: {user.role}</p>
-          </>
+      {/* LEFT SIDEBAR */}
+      <div className="sidebar">
+        <h2 className="logo">TestTrack Pro</h2>
+
+        <button
+  className="nav-btn active"
+  onClick={() => {
+    setActiveSection("dashboard");
+    setTestCaseTab(null);
+  }}
+>
+  Dashboard
+</button>
+
+        {(role === "tester" || role === "admin") && (
+          <div>
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setShowTestCaseMenu(!showTestCaseMenu);
+    }}
+  >
+    Manage Test Cases
+  </button>
+
+{showTestCaseMenu && (
+  <div className="sub-menu">
+    <button
+      className="sub-btn"
+      onClick={() => {
+        setActiveSection("testcases");
+        setTestCaseTab("create");
+      }}
+    >
+      Create Test Case
+    </button>
+
+    <button
+      className="sub-btn"
+      onClick={() => {
+        setActiveSection("testcases");
+        setTestCaseTab("view");
+      }}
+    >
+      View Test Cases
+    </button>
+
+    <button
+      className="sub-btn"
+      onClick={() => {
+        setActiveSection("testcases");
+        setTestCaseTab("import");
+      }}
+    >
+      Import Test Case
+    </button>
+
+    <button
+      className="sub-btn"
+      onClick={() => {
+        setActiveSection("testcases");
+        setTestCaseTab("templates");
+      }}
+    >
+      View Templates
+    </button>
+  </div>
+)}
+</div>
         )}
 
-        {role === "tester" && (
-          <button onClick={() => navigate("/testcases")}>
-            Manage Test Cases
-          </button>
-        )}
+{(role === "tester" || role === "admin") && (
+        <button onClick={() => navigate("/suites")}>
+  Test Suites
+</button>
+)}
 
         {role === "developer" && (
-          <button onClick={() => navigate("/bugs")}>
+          <button
+            className="nav-btn"
+            onClick={() => navigate("/bugs")}
+          >
             My Assigned Bugs
           </button>
         )}
 
         {role === "admin" && (
           <>
-            <button onClick={() => navigate("/testcases")}>
-              Manage Test Cases
-            </button>
 
-            <br /><br />
-
-            <button onClick={() => navigate("/bugs")}>
+            <button
+              className="nav-btn"
+              onClick={() => navigate("/bugs")}
+            >
               Manage All Bugs
             </button>
 
-            <br /><br />
-
-            <button onClick={() => navigate("/analytics")}>
+            <button
+              className="nav-btn"
+              onClick={() => navigate("/analytics")}
+            >
               View Analytics
             </button>
 
-            <br /><br />
-
-            <button onClick={downloadReport}>
+            <button
+              className="nav-btn"
+              onClick={downloadReport}
+            >
               Download Report
             </button>
           </>
         )}
 
-        <br /><br />
-
-        <button onClick={logout}>
+        <button
+          className="nav-btn logout-btn"
+          onClick={logout}
+        >
           Logout
         </button>
       </div>
+
+      {/* RIGHT CONTENT */}
+      <div className="main-content">
+
+  {activeSection === "dashboard" && (
+    !user ? (
+      <div className="loading-overlay">
+        <div className="blur-box">Loading...</div>
+      </div>
+    ) : (
+      <>
+        {/* USER INFO */}
+        <div className="user-info">
+          <h2>Welcome back,</h2>
+          <h1>{user.email}</h1>
+          <p className="role-text">{user.role}</p>
+        </div>
+
+        {/* ANALYTICS */}
+        <div className="analytics-section">
+          <h2>Analytics Overview</h2>
+        
+        </div>
+
+      
+      </>
+    )
+  )}
+
+  {activeSection === "testcases" && (
+  <TestCasesManager
+    activeTab={testCaseTab}
+    setTestCaseTab={setTestCaseTab}
+    setActiveSection={setActiveSection}
+  />
+)}
+
+</div>
+
     </div>
-  );}
+  );
+}

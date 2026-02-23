@@ -45,11 +45,13 @@ const [remember, setRemember] = useState(false);
 
       if (remember) {
   localStorage.setItem("token", res.data.token);
+  localStorage.setItem("role", res.data.user.role);
+  localStorage.setItem("userId", res.data.user.id);
 } else {
   sessionStorage.setItem("token", res.data.token);
+  sessionStorage.setItem("role", res.data.user.role);
+  sessionStorage.setItem("userId", res.data.user.id);
 }
-localStorage.setItem("role", res.data.user.role);
-localStorage.setItem("userId", res.data.user.id);
 
 
       setSuccess("Login successful! Redirecting... ");
@@ -124,7 +126,7 @@ localStorage.setItem("userId", res.data.user.id);
 </div>
 
 
-          <button type="submit">Login</button>
+          <button type="submit" className="login-btn">Login</button>
 
         </form>
 
