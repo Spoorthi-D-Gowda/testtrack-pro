@@ -124,7 +124,7 @@ export default function Register() {
              <option value="admin">Admin</option>
           </select>
 
-          <button type="submit">Register</button>
+          <button type="submit" className="login-btn">Register</button>
 
         </form>
 

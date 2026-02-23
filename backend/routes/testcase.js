@@ -408,32 +408,34 @@ router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
 
 
 // ================= GET ALL TEST CASES =================
-router.get("/", auth,  role(["tester", "admin"]),async (req, res) => {
-
+router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
-const showDeleted = req.query.deleted === "true";
-const cases = await prisma.testCase.findMany({
-  where: {
-    isDeleted: showDeleted ? true : false,
-    
-  },
-  include: {
-    steps: true,
-    attachments: true,
-    user: {
-      select: {
-        name: true,
-        email: true,
-      }
-    }
-  },
-  orderBy: {
-    createdAt: "desc",
-  },
-});
+    const showDeleted = req.query.deleted === "true";
+    const title = req.query.title || "";
 
-
+    const cases = await prisma.testCase.findMany({
+      where: {
+        isDeleted: showDeleted ? true : false,
+        title: {
+          contains: title,
+          mode: "insensitive",   // 🔥 case insensitive search
+        },
+      },
+      include: {
+        steps: true,
+        attachments: true,
+        user: {
+          select: {
+            name: true,
+            email: true,
+          }
+        }
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
 
     res.json(cases);
 

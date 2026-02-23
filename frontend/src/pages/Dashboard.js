@@ -62,9 +62,13 @@ export default function Dashboard() {
       .then((res) => {
         setRecentCases(res.data.slice(0, 5));
       })
-      .catch(() => {
-        logout();
-      });
+      .catch((err) => {
+  if (err.response && err.response.status === 401) {
+    logout();   // only logout if unauthorized
+  } else {
+    console.error("API error:", err.response?.data);
+  }
+});
 
   }, [navigate, logout]);
 
@@ -85,7 +89,7 @@ export default function Dashboard() {
   Dashboard
 </button>
 
-        {role === "tester" && (
+        {(role === "tester" || role === "admin") && (
           <div>
   <button
     className="nav-btn"
@@ -153,12 +157,6 @@ export default function Dashboard() {
 
         {role === "admin" && (
           <>
-            <button
-              className="nav-btn"
-              onClick={() => navigate("/testcases")}
-            >
-              Manage Test Cases
-            </button>
 
             <button
               className="nav-btn"
@@ -214,38 +212,18 @@ export default function Dashboard() {
         
         </div>
 
-        {/* RECENT TEST CASES */}
-        <div className="recent-section">
-          <div className="recent-header">
-            <h3>TestCases</h3>
-            <span
-                  className="view-all"
-                  onClick={() => navigate("/testcases")}
-                >
-                  View All
-                </span>
-          </div>
-
-          <div className="recent-list">
-            {recentCases.map((tc) => (
-              <div key={tc.id} className="recent-item">
-                <div>
-                  <strong>{tc.testCaseId}</strong> — {tc.title}
-                </div>
-                <div style={{ fontSize: "12px", opacity: 0.7 }}>
-                  {tc.module} | {tc.priority}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      
       </>
     )
   )}
 
   {activeSection === "testcases" && (
-    <TestCasesManager activeTab={testCaseTab} />
-  )}
+  <TestCasesManager
+    activeTab={testCaseTab}
+    setTestCaseTab={setTestCaseTab}
+    setActiveSection={setActiveSection}
+  />
+)}
 
 </div>
 

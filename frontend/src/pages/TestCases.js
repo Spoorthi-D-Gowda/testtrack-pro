@@ -2,9 +2,13 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "../auth.css";
 import { useNavigate } from "react-router-dom";
-export default function TestCasesManager({ activeTab }) {
-  
+import { FiSearch } from "react-icons/fi";
 
+export default function TestCasesManager({
+  activeTab,
+  setTestCaseTab,
+  setActiveSection
+}){
   const [cases, setCases] = useState({
   active: [],
   deleted: [],
@@ -51,17 +55,7 @@ export default function TestCasesManager({ activeTab }) {
   { action: "", testData: "", expected: "" }
 ]);
 console.log("TOKEN:", token);
-useEffect(() => {
 
-  if (!role) return;
-
-  // Developer should NOT access TestCases
-  if (role === "developer") {
-    alert("Access denied. Developers cannot access Test Cases.");
-    navigate("/dashboard");
-  }
-
-}, [role]);
 const fetchTemplates = useCallback(async () => {
 
   try {
@@ -142,9 +136,15 @@ const fetchCases = useCallback(async () => {
 }, [token, search]);
 
 
-  useEffect(() => {
+ useEffect(() => {
+  if (!token) return;
+
+  const delayDebounce = setTimeout(() => {
     fetchCases();
-  }, [fetchCases]);
+  }, 400);
+
+  return () => clearTimeout(delayDebounce);
+}, [search, token]);
 
   // ================= ADD / UPDATE =================
   const addCase = async (e) => {
@@ -182,6 +182,8 @@ const fetchCases = useCallback(async () => {
       setEditId(null);
 
       alert(res.data.msg || "Updated successfully ");
+      setActiveSection("testcases");
+setTestCaseTab("view");
 
     } else {
       // CREATE
@@ -221,6 +223,8 @@ const fetchCases = useCallback(async () => {
       );
 
       alert(res.data.msg || "Added successfully ");
+      setActiveSection("testcases");
+setTestCaseTab("view");
     }
 
     console.log("SERVER RESPONSE:", res.data);
@@ -475,6 +479,9 @@ const editCase = (tc) => {
         }))
       : [{ action: "", testData: "", expected: "" }]
   );
+
+   setActiveSection("testcases");
+setTestCaseTab("create");
 
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
@@ -813,20 +820,16 @@ return (
       )}
 
       {/* ================= CREATE TAB ================= */}
-      {activeTab === "create" && (
-        <>
-          <form onSubmit={addCase}>
           {/* ================= CREATE TAB ================= */}
 {activeTab === "create" && (
-  <>
-    <form onSubmit={addCase}>
+  <form onSubmit={addCase}>
 
-      <input
-        placeholder="Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        required
-      />
+    <input
+      placeholder="Title"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
+      required
+    />
 
       <input
         placeholder="Description"
@@ -936,20 +939,16 @@ return (
         </div>
       ))}
 
-      <button type="button" onClick={addStep} className="primary-btn">
-  + Add Step
-</button>
+     <button type="button" onClick={addStep} className="primary-btn">
+      + Add Step
+    </button>
 
-<button type="submit" className="success-btn">
-  {editId ? "Update Test Case" : "Add Test Case"}
-</button>
+    <button type="submit" className="success-btn">
+      {editId ? "Update Test Case" : "Add Test Case"}
+    </button>
 
-    </form>
-  </>
+  </form>
 )}
-          </form>
-        </>
-      )}
 
       {/* ================= VIEW TAB ================= */}
       {activeTab === "view" && (
@@ -974,8 +973,8 @@ return (
       onChange={(e) => setSearch(e.target.value)}
     />
     <span className="search-icon">
-      🔍
-    </span>
+  <FiSearch />
+</span>
   </div>
 </div>
 
@@ -983,13 +982,19 @@ return (
 
           {cases.active.length === 0 && <p>No test cases yet</p>}
 
-          {cases.active
-  .filter(tc =>
-    tc.title.toLowerCase().includes(search.toLowerCase())
-  )
-  .map((tc) => (
+          {cases.active.map((tc) => (
 
-    <div key={tc.id} className="testcase-card">
+    <div key={tc.id} className="testcase-row-wrapper">
+
+  <div className="row-checkbox">
+    <input
+      type="checkbox"
+      checked={selectedCases.includes(tc.id)}
+      onChange={() => toggleSelectCase(tc.id)}
+    />
+  </div>
+
+  <div className="testcase-card">
 
       <div className="testcase-grid">
 
@@ -1033,8 +1038,8 @@ return (
           <p>{tc.status}</p>
         </div>
 
-      </div>
-
+          
+</div>       {/* testcase-row-wrapper */}
       <div className="card-bottom">
         <span className="created-by">
           Created by: {tc.user?.name} ({tc.user?.email})
@@ -1047,6 +1052,7 @@ return (
           View More...
         </button>
       </div>
+      </div>   {/* testcase-card */}
 
     </div>
     
@@ -1054,19 +1060,99 @@ return (
 
           {role === "admin" && (
             <>
-              <h3 style={{ marginTop: "30px", color: "red" }}>
+              <h3 style={{ marginTop: "30px", color: "black" }}>
                 Soft Deleted Test Cases
               </h3>
 
-              {cases.deleted
-                .filter((tc) =>
-                  tc.title.toLowerCase().includes(search.toLowerCase())
-                )
-                .map((tc) => (
-                  <div key={tc.id}>
-                    {/* deleted case content unchanged */}
-                  </div>
-                ))}
+             {cases.deleted.length === 0 && (
+  <p style={{ color: "#666" }}>
+    No soft deleted test cases
+  </p>
+)}
+
+{cases.deleted.map((tc) => (
+  <div key={tc.id} className="testcase-row-wrapper">
+
+     <div className="testcase-card">
+
+      <div className="testcase-grid">
+
+        <div className="field">
+          <label>Test Case ID</label>
+          <p>{tc.testCaseId}</p>
+        </div>
+
+        <div className="field">
+          <label>Title</label>
+          <p>{tc.title}</p>
+        </div>
+
+        <div className="field">
+          <label>Priority</label>
+          <p>{tc.priority}</p>
+        </div>
+
+
+        <div className="field">
+          <label>Status</label>
+          <p>{tc.status}</p>
+        </div>
+
+          
+</div>       {/* testcase-row-wrapper */}
+<div
+  style={{
+    display: "flex",
+    alignItems: "center",
+    marginTop: "15px",
+  }}
+>
+  {/* Left side */}
+ <span className="created-by">
+          Created by: {tc.user?.name} ({tc.user?.email})
+        </span>
+  {/* Right side buttons */}
+  <div
+    style={{
+      marginLeft: "auto",
+      display: "flex",
+      gap: "15px",
+    }}
+  >
+    <button
+      onClick={() => restoreCase(tc.id)}
+      style={{
+        width: "180px",
+        padding: "12px 0",
+        background: "black",
+        color: "white",
+        borderRadius: "6px",
+        cursor: "pointer",
+        border: "none"
+      }}
+    >
+      Restore
+    </button>
+
+    <button
+      onClick={() => permanentDelete(tc.id)}
+      style={{
+        width: "180px",
+        padding: "12px 0",
+        background: "black",
+        color: "white",
+        borderRadius: "6px",
+        cursor: "pointer",
+        border: "none"
+      }}
+    >
+      Permanent Delete
+    </button>
+  </div>
+</div>
+    </div>
+  </div>
+))}
             </>
           )}
         </>
@@ -1081,14 +1167,27 @@ return (
                 type="file"
                 accept=".csv,.json"
                 onChange={(e) => setImportFile(e.target.files[0])}
+                style={{
+      border: "1px solid black",
+      padding: "6px",
+      borderRadius: "6px",
+      backgroundColor: "#fff"
+    }}
               />
 
               <button
                 type="button"
                 onClick={previewImport}
                 style={{
-                  marginLeft: "10px",
-                  background: "#2563eb"
+                  width: "100%",
+  padding: "12px",
+  background: "black",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  fontSize: "16px",
+  cursor: "pointer",
+  textAlign: "center"
                 }}
               >
                 Preview Import
@@ -1097,51 +1196,123 @@ return (
           )}
 
           {showPreview && (
-            <div
-              style={{
-                marginTop: "20px",
-                padding: "15px",
-                border: "1px solid #334155",
-                borderRadius: "8px",
-                background: "#f1f5f9"
-              }}
-            >
-              {/* ---- YOUR FULL PREVIEW TABLE (UNCHANGED) ---- */}
-            </div>
-          )}
+  <div
+    style={{
+      marginTop: "20px",
+      padding: "15px",
+      border: "1px solid #334155",
+      borderRadius: "8px",
+      background: "#f8fafc"
+    }}
+  >
+    <h3>Preview ({previewTotal} rows found)</h3>
+
+    {previewData.length === 0 ? (
+      <p>No data found in file</p>
+    ) : (
+      <div style={{ overflowX: "auto" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            marginTop: "10px"
+          }}
+        >
+          <thead>
+            <tr>
+              {Object.keys(previewData[0]).map((key) => (
+                <th
+                  key={key}
+                  style={{
+                    border: "1px solid #cbd5e1",
+                    padding: "8px",
+                    background: "#e2e8f0",
+                    textAlign: "left"
+                  }}
+                >
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {previewData.map((row, index) => (
+              <tr key={index}>
+                {Object.values(row).map((value, i) => (
+                  <td
+                    key={i}
+                    style={{
+                      border: "1px solid #cbd5e1",
+                      padding: "8px"
+                    }}
+                  >
+                    {value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    <div style={{ marginTop: "15px" }}>
+      <button
+        onClick={confirmImport}
+        style={{
+          background: "#16a34a",
+          color: "white",
+          padding: "8px 16px",
+          border: "none",
+          borderRadius: "6px",
+          marginRight: "10px"
+        }}
+      >
+        Confirm Import
+      </button>
+
+      <button
+        onClick={() => setShowPreview(false)}
+        style={{
+          background: "#dc2626",
+          color: "white",
+          padding: "8px 16px",
+          border: "none",
+          borderRadius: "6px"
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
         </>
       )}
 
       {/* ================= TEMPLATES TAB ================= */}
-      {activeTab === "templates" && (
-        <div
-          style={{
-            marginTop: "25px",
-            padding: "15px",
-            border: "1px solid #cbddf7",
-            borderRadius: "8px",
-            background: "#dfe3f5",
-          }}
-        >
+     {activeTab === "templates" && (
+  <div className="templates-container">
+        
           <h3>Templates</h3>
 
           {templates.length === 0 && (
             <p>No templates available</p>
           )}
 
-          {templates.map(template => (
-            <div key={template.id}>
+         {templates.map(template => (
+  <div key={template.id} className="template-card">
               <p>
                 <b>{template.name}</b>
               </p>
 
-              <p style={{ fontSize: "12px", color: "#64748b" }}>
+              <p className="template-created">
                 Created by: {template.createdBy?.name} ({template.createdBy?.email})
               </p>
 
               <button
                 onClick={() => applyTemplate(template.id)}
-                className="action-btn"
+                className="template-btn"
               >
                 Use Template
               </button>

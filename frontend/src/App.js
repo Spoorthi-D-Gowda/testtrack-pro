@@ -65,7 +65,8 @@ function App() {
     </PrivateRoute>
   }
 />
-
+<Route path="/dashboard/testcases/view" element={<Dashboard />} />
+<Route path="/dashboard/testcases/create" element={<Dashboard />} />
 
 
     </Routes>
