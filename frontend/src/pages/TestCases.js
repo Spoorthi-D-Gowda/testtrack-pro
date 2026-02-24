@@ -42,6 +42,7 @@ export default function TestCasesManager({
   const [previewTotal, setPreviewTotal] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
   const [showHistoryPopup, setShowHistoryPopup] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const token =
     localStorage.getItem("token") ||
@@ -156,28 +157,36 @@ const fetchCases = useCallback(async () => {
 
     if (editId) {
       // UPDATE
-      res = await axios.put(
-        `http://localhost:5000/api/testcases/${editId}`,
-        {
-          title,
-          description,
-          module,
-          priority,
-          severity,
-          type,
-          status,
-          preconditions,
-          testData,
-          environment,
-          steps: stepsList,
-          expected,
-        },
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+     const formData = new FormData();
+
+formData.append("title", title);
+formData.append("description", description);
+formData.append("module", module);
+formData.append("priority", priority);
+formData.append("severity", severity);
+formData.append("type", type);
+formData.append("status", status);
+formData.append("preconditions", preconditions);
+formData.append("testData", testData);
+formData.append("environment", environment);
+formData.append("expected", expected);
+formData.append("steps", JSON.stringify(stepsList));
+
+// Append selected files
+selectedFiles.forEach(file => {
+  formData.append("attachments", file);
+});
+
+res = await axios.put(
+  `http://localhost:5000/api/testcases/${editId}`,
+  formData,
+  {
+    headers: {
+      "x-auth-token": token,
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
 
       setEditId(null);
 
@@ -830,6 +839,12 @@ return (
       onChange={(e) => setTitle(e.target.value)}
       required
     />
+
+    <input
+  type="file"
+  multiple
+  onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
+/>
 
       <input
         placeholder="Description"

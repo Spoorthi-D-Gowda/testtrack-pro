@@ -445,7 +445,12 @@ router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
   }
 });
 
-router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
+router.put(
+  "/:id",
+  auth,
+  role(["tester", "admin"]),
+  upload.array("attachments"),
+  async (req, res) => {
   try {
 
     const id = Number(req.params.id);
@@ -461,10 +466,14 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
       preconditions,
       testData,
       environment,
-      steps,
       summary,
       expected, // keep only if exists in schema
     } = req.body;
+
+    // Parse steps safely (because FormData sends string)
+const steps = req.body.steps
+  ? JSON.parse(req.body.steps)
+  : [];
 
     // 1. Get old record
     const oldCase = await prisma.testCase.findUnique({
@@ -513,6 +522,17 @@ router.put("/:id", auth, role(["tester", "admin"]), async (req, res) => {
         },
       },
     });
+    // ================= ADD NEW ATTACHMENTS =================
+if (req.files && req.files.length > 0) {
+  await prisma.attachment.createMany({
+    data: req.files.map(file => ({
+      fileName: file.originalname,
+      filePath: file.path,
+      fileType: file.mimetype,
+      testCaseId: id,
+    })),
+  });
+}
 
     // 4. Update steps (WITHOUT deleting old ones)
     if (Array.isArray(steps)) {

@@ -32,44 +32,31 @@ export default function Dashboard() {
     navigate("/");
   }, [navigate]);
 
-  useEffect(() => {
-    const token =
-      localStorage.getItem("token") ||
-      sessionStorage.getItem("token");
+useEffect(() => {
+  const token =
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
 
-    if (!token) {
-      navigate("/");
-      return;
-    }
+  if (!token) {
+    navigate("/");
+    return;
+  }
 
-    axios
-      .get("http://localhost:5000/api/profile", {
-        headers: {
-          "x-auth-token": token,
-        },
-      })
-      .then((res) => {
-        setUser(res.data.user);
+  axios
+    .get("http://localhost:5000/api/profile", {
+      headers: {
+        "x-auth-token": token,
+      },
+    })
+    .then((res) => {
+      setUser(res.data.user);
+    })
+    .catch((err) => {
+      console.error("Dashboard error:", err);
+      logout();
+    });
 
-        // Fetch recent testcases
-        return axios.get(
-          "http://localhost:5000/api/testcases",
-          {
-            headers: { "x-auth-token": token },
-          }
-        );
-      })
-      .then((res) => {
-  setUser(res.data.user);
-})
-     .catch((err) => {
-  console.error("FULL ERROR:", err);
-  console.error("RESPONSE:", err.response);
-  console.error("REQUEST:", err.request);
-  logout();
-});
-
-  }, [navigate, logout]);
+}, [navigate, logout]);
 
   return (
     <div className="dashboard-wrapper">
