@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import TestCasesManager from "./TestCases";
+import TestSuites from "./TestSuites";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
@@ -133,7 +134,13 @@ useEffect(() => {
         )}
 
 {(role === "tester" || role === "admin") && (
-        <button onClick={() => navigate("/suites")}>
+        <button 
+         className="nav-btn"
+         onClick={() => {
+  setActiveSection("suites");
+  setTestCaseTab("suites");
+}}
+    >
   Test Suites
 </button>
 )}
@@ -215,6 +222,10 @@ useEffect(() => {
     setTestCaseTab={setTestCaseTab}
     setActiveSection={setActiveSection}
   />
+)}
+
+{activeSection === "suites" && (
+  <TestSuites />
 )}
 
 </div>

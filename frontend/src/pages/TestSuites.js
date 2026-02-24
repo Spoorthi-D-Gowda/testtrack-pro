@@ -10,15 +10,15 @@ export default function TestSuites() {
   const [suites, setSuites] = useState([]);
   const [testCases, setTestCases] = useState([]);
   const [selectedSuite, setSelectedSuite] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [module, setModule] = useState("");
   const [parentId, setParentId] = useState("");
+  const [selectedTestCases, setSelectedTestCases] = useState([]);
 
-  const [selectedTestCaseId, setSelectedTestCaseId] = useState("");
-
-  // ================= FETCH DATA =================
+  // ================= FETCH =================
   const fetchSuites = async () => {
     const res = await axios.get("http://localhost:5000/api/suites", {
       headers: { "x-auth-token": token },
@@ -29,9 +29,7 @@ export default function TestSuites() {
   const fetchTestCases = async () => {
     const res = await axios.get(
       "http://localhost:5000/api/testcases",
-      {
-        headers: { "x-auth-token": token },
-      }
+      { headers: { "x-auth-token": token } }
     );
     setTestCases(res.data);
   };
@@ -46,8 +44,14 @@ export default function TestSuites() {
     e.preventDefault();
 
     await axios.post(
-      "http://localhost:5000/api/suites",
-      { name, description, module, parentId },
+  "http://localhost:5000/api/suites",
+  {
+    name,
+    description,
+    module,
+    parentId: parentId ? Number(parentId) : null,
+    testCaseIds: selectedTestCases,
+  },
       { headers: { "x-auth-token": token } }
     );
 
@@ -55,52 +59,38 @@ export default function TestSuites() {
     setDescription("");
     setModule("");
     setParentId("");
+    setSelectedTestCases([]);
 
     fetchSuites();
   };
 
-  // ================= ADD TEST CASE =================
-  const addTestCaseToSuite = async () => {
-    if (!selectedSuite || !selectedTestCaseId) return;
-
-    await axios.post(
-      `http://localhost:5000/api/suites/${selectedSuite.id}/add`,
-      { testCaseId: Number(selectedTestCaseId) },
-      { headers: { "x-auth-token": token } }
-    );
-
-    setSelectedTestCaseId("");
-    fetchSuites();
-  };
-
-  // ================= HIERARCHY RENDER =================
-  const renderSuiteTree = (suite, level = 0) => {
-    return (
-      <div key={suite.id} style={{ marginLeft: level * 20 }}>
+const renderSuiteTree = (parentId = null, level = 0) => {
+  return suites
+    .filter((suite) => suite.parentId === parentId)
+    .map((suite) => (
+      <div key={suite.id}>
         <div
-          className="suite-card"
-          onClick={() => setSelectedSuite(suite)}
+          className="auth-card suite-tree-card"
           style={{
+            marginLeft: level * 25,
             padding: "10px",
-            border: "1px solid #ccc",
-            marginBottom: "5px",
-            cursor: "pointer",
-            background:
-              selectedSuite?.id === suite.id ? "#e0f2fe" : "#f8fafc",
+            borderRadius: "8px",
+            cursor: "pointer"
           }}
+          onClick={() => setSelectedSuite(suite)}
         >
-          <b>{suite.name}</b>
-          <div style={{ fontSize: "12px", color: "#555" }}>
+          <h4 style={{ fontSize: "15px", marginBottom: "4px" }}>
+            {suite.name}
+          </h4>
+          <p style={{ fontSize: "13px", color: "#64748b" }}>
             Module: {suite.module || "-"}
-          </div>
+          </p>
         </div>
 
-        {suite.children?.map((child) =>
-          renderSuiteTree(child, level + 1)
-        )}
+        {renderSuiteTree(suite.id, level + 1)}
       </div>
-    );
-  };
+    ));
+};
 
   return (
     <div className="auth-container">
@@ -108,7 +98,7 @@ export default function TestSuites() {
         <h2>Test Suite Management</h2>
 
         {/* ================= CREATE FORM ================= */}
-        <form onSubmit={createSuite} style={{ marginBottom: "20px" }}>
+        <form onSubmit={createSuite} style={{ marginBottom: "25px" }}>
           <input
             placeholder="Suite Name"
             value={name}
@@ -140,72 +130,130 @@ export default function TestSuites() {
             ))}
           </select>
 
+          <button
+            type="button"
+            className="primary-btn"
+            onClick={() => setShowModal(true)}
+          >
+            Select Test Cases ({selectedTestCases.length})
+          </button>
+
           <button type="submit" className="success-btn">
             Create Suite
           </button>
         </form>
 
-        {/* ================= MAIN LAYOUT ================= */}
-        <div style={{ display: "flex", gap: "20px" }}>
-          {/* LEFT SIDE - TREE */}
-          <div style={{ width: "40%" }}>
-            <h3>Suite Hierarchy</h3>
-            {suites
-              .filter((s) => !s.parentId)
-              .map((suite) => renderSuiteTree(suite))}
-          </div>
+        {/* ================= SUITE LIST ================= */}
+       <h3 style={{ marginBottom: "10px" }}>Suite Hierarchy</h3>
 
-          {/* RIGHT SIDE - DETAILS */}
-          <div style={{ width: "60%" }}>
-            {selectedSuite ? (
-              <>
-                <h3>{selectedSuite.name}</h3>
-                <p>{selectedSuite.description}</p>
+<div>
+  {renderSuiteTree(null, 0)}
+</div>
+      </div>
 
-                <h4>Test Cases in Suite</h4>
+       {/* ================= TEST CASE SELECT MODAL ================= */}
+      {showModal && (
+        <div
+          className="popup-overlay"
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="suite-popup-card"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Select Test Cases</h3>
 
-                {selectedSuite.testCases?.length === 0 && (
-                  <p>No test cases added yet.</p>
-                )}
-
-                <ul>
-                  {selectedSuite.testCases?.map((item) => (
-                    <li key={item.id}>
-                      {item.testCase.testCaseId} -{" "}
-                      {item.testCase.title}
-                    </li>
-                  ))}
-                </ul>
-
-                <h4>Add Test Case</h4>
-
-                <select
-                  value={selectedTestCaseId}
-                  onChange={(e) =>
-                    setSelectedTestCaseId(e.target.value)
-                  }
+            <div className="modal-list">
+              {testCases.map((tc) => (
+                <div
+                  key={tc.id}
+                  className="modal-row"
+                  onClick={() => {
+                    if (selectedTestCases.includes(tc.id)) {
+                      setSelectedTestCases(
+                        selectedTestCases.filter(
+                          (id) => id !== tc.id
+                        )
+                      );
+                    } else {
+                      setSelectedTestCases([
+                        ...selectedTestCases,
+                        tc.id,
+                      ]);
+                    }
+                  }}
                 >
-                  <option value="">Select Test Case</option>
-                  {testCases.map((tc) => (
-                    <option key={tc.id} value={tc.id}>
-                      {tc.testCaseId} - {tc.title}
-                    </option>
-                  ))}
-                </select>
+                  <input
+                    type="checkbox"
+                    checked={selectedTestCases.includes(tc.id)}
+                    readOnly
+                  />
 
-                <button
-                  onClick={addTestCaseToSuite}
-                  className="primary-btn"
-                >
-                  Add to Suite
-                </button>
-              </>
-            ) : (
-              <p>Select a suite to view details</p>
-            )}
+                  <div className="tc-id">
+                    {tc.testCaseId}
+                  </div>
+
+                  <div className="tc-title">
+                    {tc.title}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              className="black-btn"
+              onClick={() => setShowModal(false)}
+            >
+              Done
+            </button>
+
           </div>
         </div>
-      </div>
+      )}
+      {/* ================= SUITE DETAILS POPUP ================= */}
+      {selectedSuite && (
+        <div
+          className="popup-overlay"
+          onClick={() => setSelectedSuite(null)}
+        >
+          <div
+            className="auth-card"
+            style={{ width: "750px", maxHeight: "85vh", overflowY: "auto" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2>{selectedSuite.name}</h2>
+            <p>{selectedSuite.description}</p>
+
+            <h3 style={{ marginTop: "20px" }}>Test Cases in Suite</h3>
+
+            {selectedSuite.testCases?.length === 0 && (
+              <p>No test cases added.</p>
+            )}
+
+            <div style={{ display: "grid", gap: "10px", marginTop: "15px" }}>
+              {selectedSuite.testCases?.map((item) => (
+                <div
+                  key={item.id}
+                  className="auth-card"
+                  style={{ background: "#f8fafc" }}
+                >
+                  <strong>{item.testCase.testCaseId}</strong>
+                  <p style={{ marginTop: "5px" }}>
+                    {item.testCase.title}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            <button
+              className="primary-btn"
+              style={{ marginTop: "20px" }}
+              onClick={() => setSelectedSuite(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

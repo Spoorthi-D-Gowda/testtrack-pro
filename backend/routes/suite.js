@@ -19,21 +19,33 @@ router.post("/", auth, role(["tester", "admin"]), async (req, res) => {
   return res.status(400).json({ msg: "Request body missing" });
 }
 
-const { name, description, module, parentId } = req.body;
+const { name, description, module, parentId, testCaseIds } = req.body;
 
     if (!name || name.trim() === "") {
       return res.status(400).json({ msg: "Suite name is required" });
     }
 
     const suite = await prisma.testSuite.create({
-      data: {
-        name,
-        description,
-        module,
-        parentId: parentId || null,
-        createdById: req.user.id,
-      },
-    });
+  data: {
+    name,
+    description,
+    module,
+    parentId: parentId || null,
+    createdById: req.user.id,
+  },
+});
+
+if (testCaseIds && Array.isArray(testCaseIds) && testCaseIds.length > 0) {
+
+  await prisma.suiteTestCase.createMany({
+    data: testCaseIds.map((id, index) => ({
+      suiteId: suite.id,
+      testCaseId: id,
+      order: index + 1,
+    })),
+  });
+
+}
 
     res.status(201).json({
       msg: "Test Suite created successfully",
