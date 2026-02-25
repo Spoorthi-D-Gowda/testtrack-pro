@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import TestCases from "./pages/TestCases";
+import TestSuites from "./pages/TestSuites";
 
 // Protected Route Component
 function PrivateRoute({ children }) {
@@ -65,8 +66,15 @@ function App() {
     </PrivateRoute>
   }
 />
+<Route path="/dashboard/testcases/view" element={<Dashboard />} />
+<Route path="/dashboard/testcases/create" element={<Dashboard />} />
 
-
+<Route path="/suites" element={
+  <PrivateRoute>
+            <TestSuites />
+          </PrivateRoute>
+  } 
+  />
 
     </Routes>
   );

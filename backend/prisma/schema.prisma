@@ -20,7 +20,7 @@ model User {
   testCases   TestCase[]
   versions    TestCaseVersion[] 
   templates   TestCaseTemplate[]
-
+  testSuites  TestSuite[]
 }
 
 model TestCase {
@@ -65,6 +65,8 @@ model TestCase {
 
   steps       TestStep[]
   versions    TestCaseVersion[]
+  attachments Attachment[]
+  suites      SuiteTestCase[]
 }
 
 model TestCaseVersion {
@@ -115,7 +117,16 @@ model TestCaseTemplate {
 
   createdAt   DateTime @default(now())
 }
+model Attachment {
+  id          Int      @id @default(autoincrement())
+  fileName    String
+  filePath    String
+  fileType    String
+  uploadedAt  DateTime @default(now())
 
+  testCaseId  Int
+  testCase    TestCase @relation(fields: [testCaseId], references: [id])
+}
 
 model Bug {
   id          Int      @id @default(autoincrement())
@@ -127,3 +138,33 @@ model Bug {
   userId      Int
   user        User     @relation(fields: [userId], references: [id])
  }
+model TestSuite {
+  id            Int      @id @default(autoincrement())
+  name          String
+  description   String?
+  module        String?
+  isArchived    Boolean  @default(false)
+
+  parentId      Int?
+  parent        TestSuite? @relation("SuiteHierarchy", fields: [parentId], references: [id])
+  children      TestSuite[] @relation("SuiteHierarchy")
+
+  createdAt     DateTime @default(now())
+
+  createdById   Int
+  createdBy     User     @relation(fields: [createdById], references: [id])
+
+  testCases     SuiteTestCase[]
+}
+
+model SuiteTestCase {
+  id         Int      @id @default(autoincrement())
+  suiteId    Int
+  testCaseId Int
+  order      Int
+
+  suite      TestSuite @relation(fields: [suiteId], references: [id])
+  testCase   TestCase  @relation(fields: [testCaseId], references: [id])
+
+  @@unique([suiteId, testCaseId])
+}

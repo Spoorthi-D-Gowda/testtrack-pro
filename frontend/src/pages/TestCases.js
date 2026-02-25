@@ -2,14 +2,18 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "../auth.css";
 import { useNavigate } from "react-router-dom";
+import { FiSearch } from "react-icons/fi";
 
-export default function TestCases() {
-  const navigate = useNavigate();
-
+export default function TestCasesManager({
+  activeTab,
+  setTestCaseTab,
+  setActiveSection
+}){
   const [cases, setCases] = useState({
   active: [],
   deleted: [],
 });
+  const navigate = useNavigate();
 
   const [search, setSearch] = useState("");
   const [editId, setEditId] = useState(null);
@@ -31,13 +35,14 @@ export default function TestCases() {
   const [priority, setPriority] = useState("Medium");
   const [status, setStatus] = useState("Pending");
   const [templates, setTemplates] = useState([]);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [selectedCases, setSelectedCases] = useState([]);
 
   const [importFile, setImportFile] = useState(null);
   const [previewData, setPreviewData] = useState([]);
   const [previewTotal, setPreviewTotal] = useState(0);
   const [showPreview, setShowPreview] = useState(false);
+  const [showHistoryPopup, setShowHistoryPopup] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState([]);
 
   const token =
     localStorage.getItem("token") ||
@@ -50,19 +55,36 @@ export default function TestCases() {
   const [stepsList, setStepsList] = useState([
   { action: "", testData: "", expected: "" }
 ]);
+console.log("TOKEN:", token);
 
-useEffect(() => {
+const fetchTemplates = useCallback(async () => {
 
-  if (!role) return;
+  try {
 
-  // Developer should NOT access TestCases
-  if (role === "developer") {
-    alert("Access denied. Developers cannot access Test Cases.");
-    navigate("/dashboard");
+    const res = await axios.get(
+      "http://localhost:5000/api/testcases/templates/all",
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
+
+    setTemplates(res.data);
+
+  } catch (err) {
+
+    alert("Failed to load templates");
+
   }
 
-}, [role, navigate]);
+}, [token]);
 
+useEffect(() => {
+  if (activeTab === "templates") {
+    fetchTemplates();
+  }
+}, [activeTab, fetchTemplates]);
 
 // Add new step
 const addStep = () => {
@@ -90,17 +112,15 @@ const removeStep = (index) => {
 const fetchCases = useCallback(async () => {
   try {
 
-    // Active test cases
     const activeRes = await axios.get(
-      "http://localhost:5000/api/testcases",
+      `http://localhost:5000/api/testcases?title=${search}`,
       {
         headers: { "x-auth-token": token },
       }
     );
 
-    // Deleted test cases
     const deletedRes = await axios.get(
-      "http://localhost:5000/api/testcases?deleted=true",
+      `http://localhost:5000/api/testcases?deleted=true&title=${search}`,
       {
         headers: { "x-auth-token": token },
       }
@@ -114,12 +134,18 @@ const fetchCases = useCallback(async () => {
   } catch (err) {
     console.error(err);
   }
-}, [token]);
+}, [token, search]);
 
 
-  useEffect(() => {
+ useEffect(() => {
+  if (!token) return;
+
+  const delayDebounce = setTimeout(() => {
     fetchCases();
-  }, [fetchCases]);
+  }, 400);
+
+  return () => clearTimeout(delayDebounce);
+}, [search, token]);
 
   // ================= ADD / UPDATE =================
   const addCase = async (e) => {
@@ -131,32 +157,42 @@ const fetchCases = useCallback(async () => {
 
     if (editId) {
       // UPDATE
-      res = await axios.put(
-        `http://localhost:5000/api/testcases/${editId}`,
-        {
-          title,
-          description,
-          module,
-          priority,
-          severity,
-          type,
-          status,
-          preconditions,
-          testData,
-          environment,
-          steps: stepsList,
-          expected,
-        },
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+     const formData = new FormData();
+
+formData.append("title", title);
+formData.append("description", description);
+formData.append("module", module);
+formData.append("priority", priority);
+formData.append("severity", severity);
+formData.append("type", type);
+formData.append("status", status);
+formData.append("preconditions", preconditions);
+formData.append("testData", testData);
+formData.append("environment", environment);
+formData.append("expected", expected);
+formData.append("steps", JSON.stringify(stepsList));
+
+// Append selected files
+selectedFiles.forEach(file => {
+  formData.append("attachments", file);
+});
+
+res = await axios.put(
+  `http://localhost:5000/api/testcases/${editId}`,
+  formData,
+  {
+    headers: {
+      "x-auth-token": token,
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
 
       setEditId(null);
 
       alert(res.data.msg || "Updated successfully ");
+      setActiveSection("testcases");
+setTestCaseTab("view");
 
     } else {
       // CREATE
@@ -186,6 +222,7 @@ const fetchCases = useCallback(async () => {
           automationLink: "",
 
           steps: stepsList,
+          expected,
         },
         {
           headers: {
@@ -195,6 +232,8 @@ const fetchCases = useCallback(async () => {
       );
 
       alert(res.data.msg || "Added successfully ");
+      setActiveSection("testcases");
+setTestCaseTab("view");
     }
 
     console.log("SERVER RESPONSE:", res.data);
@@ -261,34 +300,38 @@ const deleteCase = async (id) => {
 };
 
   // ================= CLONE =================
-  const cloneCase = async (id) => {
-    try {
-      await axios.post(
-        `http://localhost:5000/api/testcases/clone/${id}`,
-        {},
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
+const cloneCase = async (id, includeAttachments) => {
+  try {
+    await axios.post(
+      `http://localhost:5000/api/testcases/clone/${id}`,
+      { includeAttachments },
+      {
+        headers: {
+          "x-auth-token": token,
+        },
+      }
+    );
 
-      fetchCases();
+    fetchCases();
 
-    } catch (err) {
-      alert("Clone failed ");
-    }
-  };
+  } catch (err) {
+    alert("Clone failed ");
+  }
+};
 
-  const selectAllCases = () => {
 
-  if (selectedCases.length === cases.length) {
+const selectAllCases = () => {
+
+  const activeCases = cases.active;
+
+  if (selectedCases.length === activeCases.length) {
     setSelectedCases([]);
   } else {
-    setSelectedCases(cases.map(tc => tc.id));
+    setSelectedCases(activeCases.map(tc => tc.id));
   }
 
 };
+
 
 
   const applyTemplate = async (templateId) => {
@@ -343,30 +386,6 @@ const deleteCase = async (id) => {
       err.response?.data?.msg ||
       "Failed to save template"
     );
-
-  }
-
-};
-
-const fetchTemplates = async () => {
-
-  try {
-
-    const res = await axios.get(
-      "http://localhost:5000/api/testcases/templates/all",
-      {
-        headers: {
-          "x-auth-token": token,
-        },
-      }
-    );
-
-    setTemplates(res.data);
-    setShowTemplates(true);
-
-  } catch (err) {
-
-    alert("Failed to load templates");
 
   }
 
@@ -439,7 +458,9 @@ const toggleSelectCase = (id) => {
   }
 
 };
-
+const selectedTestCase = cases.active.find(
+  (tc) => tc.id === showHistoryId
+);
 
   // ================= EDIT =================
 const editCase = (tc) => {
@@ -468,6 +489,9 @@ const editCase = (tc) => {
       : [{ action: "", testData: "", expected: "" }]
   );
 
+   setActiveSection("testcases");
+setTestCaseTab("create");
+
   window.scrollTo({ top: 0, behavior: "smooth" });
 };
 
@@ -492,13 +516,18 @@ const fetchHistory = async (id) => {
   }
 };
 
-const bulkDelete = async () => {
+ const bulkDelete = async () => {
 
   if (selectedCases.length === 0) {
     alert("Select test cases first");
     return;
   }
 
+  if (!window.confirm(
+    `Are you sure you want to delete ${selectedCases.length} test cases?`
+  )) {
+    return;
+  }
   try {
 
     const res = await axios.post(
@@ -527,6 +556,7 @@ const bulkDelete = async () => {
   }
 
 };
+
 const bulkStatusUpdate = async (status) => {
 
   if (selectedCases.length === 0) {
@@ -565,6 +595,7 @@ const bulkStatusUpdate = async (status) => {
   }
 
 };
+
 const bulkExport = async () => {
 
   if (selectedCases.length === 0) {
@@ -753,719 +784,677 @@ const permanentDelete = async (id) => {
   }
 
 };
+const uploadAttachment = async (id, file) => {
 
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    await axios.post(
+      `http://localhost:5000/api/testcases/${id}/upload`,
+      formData,
+      {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    alert("File uploaded successfully");
+
+    fetchCases(); // refresh list
+
+  } catch (err) {
+    alert("Upload failed");
+    console.error(err);
+  }
+};
 
   // ================= UI =================
-  return (
-    <div className="auth-container">
-      <div className="auth-card test-card">
+return (
+  <div className="auth-container">
+    <div className="auth-card test-card">
 
-        <div className="page-header">
-          <span
-            className="back-link"
-            onClick={() => navigate("/dashboard")}
-          >
-            ← Dashboard
-          </span>
+      <div className="page-header">
+        <h2>Test Case Management</h2>
+      </div>
 
-          <h2>Test Case Management</h2>
-        </div>
+      {editId && (
+        <p style={{ color: "#d1e6ef" }}>
+          Editing Mode: Update the test case
+        </p>
+      )}
 
-        {editId && (
-          <p style={{ color: "#38bdf8" }}>
-            Editing Mode: Update the test case
-          </p>
-        )}
-
-        
-        
-
-        {/* FORM */}
-        <form onSubmit={addCase}>
-
-          <input placeholder="Title" value={title}
-            onChange={(e) => setTitle(e.target.value)} required />
-
-          <input placeholder="Description" value={description}
-            onChange={(e) => setDescription(e.target.value)} required />
-
-          <input placeholder="Expected Result" value={expected}
-            onChange={(e) => setExpected(e.target.value)} required />
-
-          <input placeholder="Module" value={module}
-            onChange={(e) => setModule(e.target.value)} required />
-
-          <select value={priority}
-            onChange={(e) => setPriority(e.target.value)}>
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-
-          <select value={severity}
-            onChange={(e) => setSeverity(e.target.value)} required>
-            <option value="">Select Severity</option>
-            <option>Blocker</option>
-            <option>Critical</option>
-            <option>Major</option>
-            <option>Minor</option>
-            <option>Trivial</option>
-          </select>
-
-          <select value={type}
-            onChange={(e) => setType(e.target.value)} required>
-            <option value="">Select Type</option>
-            <option>Functional</option>
-            <option>Regression</option>
-            <option>Smoke</option>
-            <option>Integration</option>
-            <option>Security</option>
-            <option>Performance</option>
-          </select>
-
-          <select value={status}
-            onChange={(e) => setStatus(e.target.value)}>
-            <option>Pending</option>
-            <option>Pass</option>
-            <option>Fail</option>
-          </select>
-
-          <textarea placeholder="Preconditions"
-            value={preconditions}
-            onChange={(e) => setPreconditions(e.target.value)} />
-
-          <textarea placeholder="Test Data"
-            value={testData}
-            onChange={(e) => setTestData(e.target.value)} />
-
-          <textarea placeholder="Environment"
-            value={environment}
-            onChange={(e) => setEnvironment(e.target.value)} />
-
-            <h4>Test Steps</h4>
-
-{stepsList.map((step, index) => (
-
-  <div
-    key={index}
-    style={{
-      border: "1px solid #334155",
-      padding: "10px",
-      marginBottom: "10px",
-      borderRadius: "6px",
-    }}
-  >
-
-    <p><b>Step {index + 1}</b></p>
+      {/* ================= CREATE TAB ================= */}
+          {/* ================= CREATE TAB ================= */}
+{activeTab === "create" && (
+  <form onSubmit={addCase}>
 
     <input
-      placeholder="Action"
-      value={step.action}
-      onChange={(e) =>
-        updateStep(index, "action", e.target.value)
-      }
+      placeholder="Title"
+      value={title}
+      onChange={(e) => setTitle(e.target.value)}
       required
     />
 
     <input
-      placeholder="Test Data"
-      value={step.testData}
-      onChange={(e) =>
-        updateStep(index, "testData", e.target.value)
-      }
-    />
-
-    <input
-      placeholder="Expected Result"
-      value={step.expected}
-      onChange={(e) =>
-        updateStep(index, "expected", e.target.value)
-      }
-      required
-    />
-
-    {stepsList.length > 1 && (
-      <button
-        type="button"
-        onClick={() => removeStep(index)}
-        style={{
-          background: "#dc2626",
-          marginTop: "5px",
-        }}
-      >
-        Remove Step
-      </button>
-    )}
-
-  </div>
-))}
-
-<button
-  type="button"
-  onClick={addStep}
-  style={{
-    background: "#2563eb",
-    marginBottom: "15px",
-  }}
->
-  + Add Step
-</button>
-
-
-          <button>
-            {editId ? "Update Test Case" : "Add Test Case"}
-          </button>
-
-        </form>
-
-        <hr />
-
-        {/* SEARCH */}
-        <input
-          placeholder="Search by title..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        
-   
-<div style={{ marginBottom: "15px" }}>
-
-
-{(role === "tester" || role === "admin")&& (
-<input
   type="file"
-  accept=".csv,.json"
-  onChange={(e) => setImportFile(e.target.files[0])}
+  multiple
+  onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
 />
-)}
 
-  <button
-    type="button"
-    onClick={previewImport}
-    style={{
-      marginLeft: "10px",
-      background: "#2563eb"
-    }}
-  >
-    Preview Import
-  </button>
+      <input
+        placeholder="Description"
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        required
+      />
 
-</div>
+      <input
+        placeholder="Expected Result"
+        value={expected}
+        onChange={(e) => setExpected(e.target.value)}
+        required
+      />
 
+      <input
+        placeholder="Module"
+        value={module}
+        onChange={(e) => setModule(e.target.value)}
+        required
+      />
 
-        <button
-  onClick={fetchTemplates}
-  style={{
-    background: "#7c3aed",
-    marginBottom: "15px",
-  }}
->
-  View Templates
-</button>
+      <select value={priority} onChange={(e) => setPriority(e.target.value)}>
+        <option>High</option>
+        <option>Medium</option>
+        <option>Low</option>
+      </select>
 
-{(role === "tester" || role === "admin")&& (
-<div style={{ marginBottom: "15px" }}>
+      <select value={severity} onChange={(e) => setSeverity(e.target.value)} required>
+        <option value="">Select Severity</option>
+        <option>Blocker</option>
+        <option>Critical</option>
+        <option>Major</option>
+        <option>Minor</option>
+        <option>Trivial</option>
+      </select>
 
-  <button onClick={selectAllCases}>
-    Select All
-  </button>
+      <select value={type} onChange={(e) => setType(e.target.value)} required>
+        <option value="">Select Type</option>
+        <option>Functional</option>
+        <option>Regression</option>
+        <option>Smoke</option>
+        <option>Integration</option>
+        <option>Security</option>
+        <option>Performance</option>
+      </select>
 
-  <button onClick={bulkDelete}>
-    Bulk Delete
-  </button>
+      <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <option>Pending</option>
+        <option>Pass</option>
+        <option>Fail</option>
+      </select>
 
-  <button onClick={() => bulkStatusUpdate("Approved")}>
-    Mark Approved
-  </button>
+      <textarea
+        placeholder="Preconditions"
+        value={preconditions}
+        onChange={(e) => setPreconditions(e.target.value)}
+      />
 
-  <button onClick={() => bulkStatusUpdate("Draft")}>
-    Mark Draft
-  </button>
+      <textarea
+        placeholder="Test Data"
+        value={testData}
+        onChange={(e) => setTestData(e.target.value)}
+      />
 
-  <button onClick={bulkExport}>
-    Export CSV
-  </button>
+      <textarea
+        placeholder="Environment"
+        value={environment}
+        onChange={(e) => setEnvironment(e.target.value)}
+      />
 
+      <h4>Test Steps</h4>
 
+      {stepsList.map((step, index) => (
+        <div key={index} className="step-card">
+          <p><b>Step {index + 1}</b></p>
 
-</div>
-)}
+          <input
+            placeholder="Action"
+            value={step.action}
+            onChange={(e) => updateStep(index, "action", e.target.value)}
+            required
+          />
 
-        {/* LIST */}
-        <h3>My Test Cases</h3>
+          <input
+            placeholder="Test Data"
+            value={step.testData}
+            onChange={(e) => updateStep(index, "testData", e.target.value)}
+          />
 
-        {cases.length === 0 && <p>No test cases yet</p>}
+          <input
+            placeholder="Expected Result"
+            value={step.expected}
+            onChange={(e) => updateStep(index, "expected", e.target.value)}
+            required
+          />
 
-        {cases.active
-          .filter((tc) =>
-            tc.title.toLowerCase().includes(search.toLowerCase())
-          )
-          .map((tc) => (
-
-            <div key={tc.id}
-              style={{
-                border: "1px solid #334155",
-                padding: "12px",
-                marginBottom: "12px",
-                borderRadius: "6px",
-              }}
+          {stepsList.length > 1 && (
+            <button
+              type="button"
+              onClick={() => removeStep(index)}
+              style={{ background: "#dc2626", marginTop: "5px" }}
             >
-              <input
-  type="checkbox"
-  checked={selectedCases.includes(tc.id)}
-  onChange={() => toggleSelectCase(tc.id)}
-/>
+              Remove Step
+            </button>
+          )}
+        </div>
+      ))}
 
-              <h4>
-  {tc.testCaseId} — {tc.title}
-</h4>
-<p style={{ fontSize: "12px", color: "#64748b" }}>
-  Created by: {tc.user?.name} ({tc.user?.email})
-</p>
-
-              <p><b>Description:</b> {tc.description}</p>
-              <p><b>Module:</b> {tc.module}</p>
-              <p><b>Priority:</b> {tc.priority}</p>
-              <p><b>Severity:</b> {tc.severity}</p>
-              <p><b>Type:</b> {tc.type}</p>
-              <p><b>Status:</b> {tc.status}</p>
-
-              <p><b>Preconditions:</b> {tc.preconditions}</p>
-              <p><b>Test Data:</b> {tc.testData}</p>
-              <p><b>Environment:</b> {tc.environment}</p>
-
-              <div>
-  <b>Steps:</b>
-
-  {tc.steps && tc.steps.length === 0 && (
-    <p>No steps added</p>
-  )}
-
-{tc.steps && tc.steps.map((step) => (
-
-  <div
-    key={step.id}
-    style={{
-      marginTop: "8px",
-      padding: "10px",
-      border: "1px solid #334155",
-      borderRadius: "6px",
-    }}
-  >
-
-    <p><b>Step {step.stepNo}</b></p>
-
-    <p><b>Action:</b> {step.action}</p>
-
-    <p><b>Expected:</b> {step.expected}</p>
-
-
-    {/* ACTUAL RESULT INPUT */}
-    <textarea
-      placeholder="Enter Actual Result"
-      value={
-        executionData[step.id]?.actual ??
-        step.actual ??
-        ""
-      }
-      onChange={(e) =>
-        handleExecutionChange(
-          step.id,
-          "actual",
-          e.target.value
-        )
-      }
-    />
-
-
-    {/* STATUS DROPDOWN */}
-    <select
-      value={
-        executionData[step.id]?.status ??
-        step.status ??
-        "Pending"
-      }
-      onChange={(e) =>
-        handleExecutionChange(
-          step.id,
-          "status",
-          e.target.value
-        )
-      }
-    >
-      <option>Pending</option>
-      <option>Pass</option>
-      <option>Fail</option>
-      <option>Blocked</option>
-      <option>Skipped</option>
-    </select>
-
-
-    {/* NOTES INPUT */}
-    <textarea
-      placeholder="Enter Notes"
-      value={
-        executionData[step.id]?.notes ??
-        step.notes ??
-        ""
-      }
-      onChange={(e) =>
-        handleExecutionChange(
-          step.id,
-          "notes",
-          e.target.value
-        )
-      }
-    />
-
-
-    {/* UPDATE BUTTON */}
-    <button
-      type="button"
-      onClick={() =>
-        updateStepExecution(
-          step.id,
-          executionData[step.id] || {}
-        )
-      }
-      style={{
-        marginTop: "6px",
-        background: "#0d1975",
-      }}
-    >
-      Update Step
+     <button type="button" onClick={addStep} className="primary-btn">
+      + Add Step
     </button>
 
+    <button type="submit" className="success-btn">
+      {editId ? "Update Test Case" : "Add Test Case"}
+    </button>
+
+  </form>
+)}
+
+      {/* ================= VIEW TAB ================= */}
+      {activeTab === "view" && (
+        <>
+
+          {(role === "tester" || role === "admin") && (
+            <div className="test-header">
+  <button onClick={selectAllCases}>Select All</button>
+  <button onClick={bulkDelete}>Bulk Delete</button>
+  <button onClick={() => bulkStatusUpdate("Approved")}>Mark Approved</button>
+  <button onClick={() => bulkStatusUpdate("Draft")}>Mark Draft</button>
+  <button onClick={bulkExport}>Export CSV</button>
+</div>
+          )}
+        
+       <div className="search-wrapper">
+  <div className="search-box">
+    <input
+      type="text"
+      placeholder="Search..."
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+    />
+    <span className="search-icon">
+  <FiSearch />
+</span>
   </div>
-
-))}
-
-
 </div>
 
-              <p><b>Expected:</b> {tc.expected}</p>
+          <h3>My Test Cases</h3>
 
+          {cases.active.length === 0 && <p>No test cases yet</p>}
+
+          {cases.active.map((tc) => (
+
+    <div key={tc.id} className="testcase-row-wrapper">
+
+  <div className="row-checkbox">
+    <input
+      type="checkbox"
+      checked={selectedCases.includes(tc.id)}
+      onChange={() => toggleSelectCase(tc.id)}
+    />
+  </div>
+
+  <div className="testcase-card">
+
+      <div className="testcase-grid">
+
+        <div className="field">
+          <label>Test Case ID</label>
+          <p>{tc.testCaseId}</p>
+        </div>
+
+        <div className="field">
+          <label>Title</label>
+          <p>{tc.title}</p>
+        </div>
+
+        <div className="field">
+          <label>Description</label>
+          <p>{tc.description}</p>
+        </div>
+
+        <div className="field">
+          <label>Module</label>
+          <p>{tc.module}</p>
+        </div>
+
+        <div className="field">
+          <label>Expected Result</label>
+          <p>{tc.expected}</p>
+        </div>
+
+        <div className="field">
+          <label>Priority</label>
+          <p>{tc.priority}</p>
+        </div>
+
+        <div className="field">
+          <label>Severity</label>
+          <p>{tc.severity}</p>
+        </div>
+
+        <div className="field">
+          <label>Status</label>
+          <p>{tc.status}</p>
+        </div>
+
+          
+</div>       {/* testcase-row-wrapper */}
+      <div className="card-bottom">
+        <span className="created-by">
+          Created by: {tc.user?.name} ({tc.user?.email})
+        </span>
+
+        <button
+          className="view-more-btn"
+          onClick={() => fetchHistory(tc.id)}
+        >
+          View More...
+        </button>
+      </div>
+      </div>   {/* testcase-card */}
+
+    </div>
+    
+))}
+
+          {role === "admin" && (
+            <>
+              <h3 style={{ marginTop: "30px", color: "black" }}>
+                Soft Deleted Test Cases
+              </h3>
+
+             {cases.deleted.length === 0 && (
+  <p style={{ color: "#666" }}>
+    No soft deleted test cases
+  </p>
+)}
+
+{cases.deleted.map((tc) => (
+  <div key={tc.id} className="testcase-row-wrapper">
+
+     <div className="testcase-card">
+
+      <div className="testcase-grid">
+
+        <div className="field">
+          <label>Test Case ID</label>
+          <p>{tc.testCaseId}</p>
+        </div>
+
+        <div className="field">
+          <label>Title</label>
+          <p>{tc.title}</p>
+        </div>
+
+        <div className="field">
+          <label>Priority</label>
+          <p>{tc.priority}</p>
+        </div>
+
+
+        <div className="field">
+          <label>Status</label>
+          <p>{tc.status}</p>
+        </div>
+
+          
+</div>       {/* testcase-row-wrapper */}
 <div
   style={{
     display: "flex",
-    gap: "15px",
-    marginTop: "12px",
-    flexWrap: "wrap",
+    alignItems: "center",
+    marginTop: "15px",
   }}
 >
-
-  <button
-    onClick={() => editCase(tc)}
-    className="action-btn"
+  {/* Left side */}
+ <span className="created-by">
+          Created by: {tc.user?.name} ({tc.user?.email})
+        </span>
+  {/* Right side buttons */}
+  <div
+    style={{
+      marginLeft: "auto",
+      display: "flex",
+      gap: "15px",
+    }}
   >
-    Edit
-  </button>
+    <button
+      onClick={() => restoreCase(tc.id)}
+      style={{
+        width: "180px",
+        padding: "12px 0",
+        background: "black",
+        color: "white",
+        borderRadius: "6px",
+        cursor: "pointer",
+        border: "none"
+      }}
+    >
+      Restore
+    </button>
 
-  <button
-    onClick={() => cloneCase(tc.id)}
-    className="action-btn"
-  >
-    Clone
-  </button>
-
-{(role === "tester" || role === "admin") && (
-<button onClick={() => saveTemplate(tc.id)}>
-  Save Template
-</button>
-)}
-
-
-
-  <button
-    onClick={() => fetchHistory(tc.id)}
-    className="action-btn"
-  >
-    History
-  </button>
-
-  <button
-    onClick={() => deleteCase(tc.id)}
-    className="action-btn"
-  >
-    Delete
-  </button>
-
-
+    <button
+      onClick={() => permanentDelete(tc.id)}
+      style={{
+        width: "180px",
+        padding: "12px 0",
+        background: "black",
+        color: "white",
+        borderRadius: "6px",
+        cursor: "pointer",
+        border: "none"
+      }}
+    >
+      Permanent Delete
+    </button>
+  </div>
 </div>
+    </div>
+  </div>
+))}
+            </>
+          )}
+        </>
+      )}
 
+      {/* ================= IMPORT TAB ================= */}
+      {activeTab === "import" && (
+        <>
+          {(role === "tester" || role === "admin") && (
+            <div style={{ marginBottom: "15px" }}>
+              <input
+                type="file"
+                accept=".csv,.json"
+                onChange={(e) => setImportFile(e.target.files[0])}
+                style={{
+      border: "1px solid black",
+      padding: "6px",
+      borderRadius: "6px",
+      backgroundColor: "#fff"
+    }}
+              />
 
+              <button
+                type="button"
+                onClick={previewImport}
+                style={{
+                  width: "100%",
+  padding: "12px",
+  background: "black",
+  color: "white",
+  border: "none",
+  borderRadius: "6px",
+  fontSize: "16px",
+  cursor: "pointer",
+  textAlign: "center"
+                }}
+              >
+                Preview Import
+              </button>
             </div>
-          ))}
+          )}
 
-{role === "admin" && (
-  <>
-    <h3 style={{ marginTop: "30px", color: "red" }}>
-      Soft Deleted Test Cases
-    </h3>
-
-    {cases.deleted
-      .filter((tc) =>
-        tc.title.toLowerCase().includes(search.toLowerCase())
-      )
-      .map((tc) => (
-
-        <div key={tc.id}
-          style={{
-            border: "1px solid red",
-            padding: "12px",
-            marginBottom: "12px",
-            borderRadius: "6px",
-            opacity: 0.7
-          }}
-        >
-          <h4>
-            {tc.testCaseId} — {tc.title}
-          </h4>
-
-          <button
-            onClick={() => restoreCase(tc.id)}
-            style={{ background: "green" }}
-          >
-            Restore
-          </button>
-
-          <button
-            onClick={() => permanentDelete(tc.id)}
-            style={{ background: "darkred" }}
-          >
-            Permanent Delete
-          </button>
-
-        </div>
-
-    ))}
-  </>
-)}
-
-
-      </div>
-
-          {/* Version History Panel */}
-{showHistoryId && (
-  <div
-    style={{
-      marginTop: "25px",
-      padding: "15px",
-      border: "1px solid #6a87af",
-      borderRadius: "8px",
-      background: "#d3d6e6",
-    }}
-  >
-
-    <h3>Version History</h3>
-
-    <button
-      style={{
-        float: "right",
-        background: "transparent",
-        color: "#38bdf8",
-      }}
-      onClick={() => setShowHistoryId(null)}
-    >
-      Close
-    </button>
-
-    {history.length === 0 && <p>No history found</p>}
-
-    {history.map((h) => (
-
-      <div
-        key={h.id}
-        style={{
-          borderBottom: "1px solid #334155",
-          padding: "10px 0",
-        }}
-      >
-
-        <p><b>Version:</b> v{h.version}</p>
-        <p><b>Summary:</b> {h.summary}</p>
-        <p>
-          <b>Edited By:</b> {h.editedBy.name} ({h.editedBy.email})
-        </p>
-        <p>
-          <b>Date:</b>{" "}
-          {new Date(h.createdAt).toLocaleString()}
-        </p>
-
-      </div>
-    ))}
-  </div>
-)}
-
-{showTemplates && (
-
-  <div
-    style={{
-      marginTop: "25px",
-      padding: "15px",
-      border: "1px solid #334155",
-      borderRadius: "8px",
-      background: "#dfe3f5",
-    }}
-  >
-
-    <h3>Templates</h3>
-
-    <button
-      onClick={() => setShowTemplates(false)}
-      style={{
-        float: "right",
-        background: "white",
-        color: "#38bdf8",
-      }}
-    >
-      Close
-    </button>
-
-    {templates.length === 0 &&
-      <p>No templates available</p>
-    }
-
-    {templates.map(template => (
-
-      <div
-        key={template.id}
-        style={{
-          borderBottom: "1px solid #73839a",
-          padding: "10px",
-        }}
-      >
-
-        <p>
-          <b>{template.name}</b>
-        </p>
-
-    <p style={{ fontSize: "12px", color: "#64748b" }}>
-  Created by: {template.createdBy?.name} ({template.createdBy?.email})
-</p>
-
-
-        <button
-          onClick={() =>
-            applyTemplate(template.id)
-          }
-          className="action-btn"
-        >
-          Use Template
-        </button>
-
-      </div>
-
-    ))}
-
-  </div>
-
-)}
-
-{showPreview && (
-
+          {showPreview && (
   <div
     style={{
       marginTop: "20px",
       padding: "15px",
       border: "1px solid #334155",
       borderRadius: "8px",
-      background: "#f1f5f9"
+      background: "#f8fafc"
     }}
   >
+    <h3>Preview ({previewTotal} rows found)</h3>
 
-    <h3>Import Preview</h3>
+    {previewData.length === 0 ? (
+      <p>No data found in file</p>
+    ) : (
+      <div style={{ overflowX: "auto" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            marginTop: "10px"
+          }}
+        >
+          <thead>
+            <tr>
+              {Object.keys(previewData[0]).map((key) => (
+                <th
+                  key={key}
+                  style={{
+                    border: "1px solid #cbd5e1",
+                    padding: "8px",
+                    background: "#e2e8f0",
+                    textAlign: "left"
+                  }}
+                >
+                  {key}
+                </th>
+              ))}
+            </tr>
+          </thead>
 
-    <p>Total records: {previewTotal}</p>
-
-    {previewData.length === 0 && (
-      <p>No data</p>
+          <tbody>
+            {previewData.map((row, index) => (
+              <tr key={index}>
+                {Object.values(row).map((value, i) => (
+                  <td
+                    key={i}
+                    style={{
+                      border: "1px solid #cbd5e1",
+                      padding: "8px"
+                    }}
+                  >
+                    {value}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     )}
 
-    {previewData.length > 0 && (
-
-      <table
-        border="1"
-        cellPadding="6"
+    <div style={{ marginTop: "15px" }}>
+      <button
+        onClick={confirmImport}
         style={{
-          borderCollapse: "collapse",
-          width: "100%",
-          marginBottom: "10px"
+          background: "#16a34a",
+          color: "white",
+          padding: "8px 16px",
+          border: "none",
+          borderRadius: "6px",
+          marginRight: "10px"
         }}
       >
+        Confirm Import
+      </button>
 
-        <thead>
+      <button
+        onClick={() => setShowPreview(false)}
+        style={{
+          background: "#dc2626",
+          color: "white",
+          padding: "8px 16px",
+          border: "none",
+          borderRadius: "6px"
+        }}
+      >
+        Cancel
+      </button>
+    </div>
+  </div>
+)}
+        </>
+      )}
 
-          <tr>
+      {/* ================= TEMPLATES TAB ================= */}
+     {activeTab === "templates" && (
+  <div className="templates-container">
+        
+          <h3>Templates</h3>
 
-            {Object.keys(previewData[0]).map(key => (
+          {templates.length === 0 && (
+            <p>No templates available</p>
+          )}
 
-              <th key={key}>{key}</th>
+         {templates.map(template => (
+  <div key={template.id} className="template-card">
+              <p>
+                <b>{template.name}</b>
+              </p>
 
-            ))}
+              <p className="template-created">
+                Created by: {template.createdBy?.name} ({template.createdBy?.email})
+              </p>
 
-          </tr>
+              <button
+                onClick={() => applyTemplate(template.id)}
+                className="template-btn"
+              >
+                Use Template
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
-        </thead>
-            <tbody>
+      {/* ================= HISTORY PANEL ================= */}
+      {showHistoryId && selectedTestCase && (
+  <div className="popup-overlay" onClick={() => setShowHistoryId(null)}>
+    <div className="popup-card" onClick={(e) => e.stopPropagation()}>
 
-  {previewData.map((row, i) => (
+      <h3>Test Case Details</h3>
 
-    <tr key={i}>
+      {/* ===== Test Steps ===== */}
 
-      {Object.values(row).map((val, j) => (
 
-        <td key={j}>
+<p><b>ID:</b> {selectedTestCase.testCaseId}</p>
+<p><b>Title:</b> {selectedTestCase.title}</p>
+<p><b>Description:</b> {selectedTestCase.description}</p>
+<p><b>Module:</b> {selectedTestCase.module}</p>
+<p><b>Expected:</b> {selectedTestCase.expected}</p>
+<p><b>Priority:</b> {selectedTestCase.priority}</p>
+<p><b>Severity:</b> {selectedTestCase.severity}</p>
+<p><b>Status:</b> {selectedTestCase.status}</p>
+<p><b>Preconditions:</b> {selectedTestCase.preconditions}</p>
+<p><b>Test Data:</b> {selectedTestCase.testData}</p>
+<p><b>Environment:</b> {selectedTestCase.environment}</p>
 
-          {typeof val === "object" && val !== null
-            ? Array.isArray(val)
-              ? val.map((item, idx) => (
-                  <div key={idx}>
-                    {typeof item === "object"
-                      ? `${item.action || ""} → ${item.expected || ""}`
-                      : item}
-                  </div>
-                ))
-              : JSON.stringify(val)
-            : val}
+<h4>Test Steps</h4>
+{selectedTestCase.steps?.map((step, index) => (
+  <div key={index} className="popup-step">
+    <p><b>Step {index + 1}</b></p>
+    <p>Action: {step.action}</p>
+    <p>Test Data: {step.testData}</p>
+    <p>Expected: {step.expected}</p>
+  </div>
+))}
 
-        </td>
+      {/* ===== Action Buttons (Backend Connected) ===== */}
+      <div className="popup-actions-bar">
 
+        <button onClick={() => editCase(selectedTestCase)}>
+          Edit
+        </button>
+
+        <button onClick={() => saveTemplate(showHistoryId)}>
+          Save Template
+        </button>
+
+        <button onClick={() => cloneCase(showHistoryId, true)}>
+          Clone with Attach
+        </button>
+
+        <button onClick={() => cloneCase(showHistoryId, false)}>
+          Clone
+        </button>
+
+        <button
+  onClick={async () => {
+    await fetchHistory(showHistoryId);
+    setShowHistoryPopup(true);
+  }}
+>
+  History
+</button>
+
+        <button onClick={() => deleteCase(showHistoryId)}>
+          Delete
+        </button>
+
+        <button onClick={() => setShowHistoryId(null)}>
+          Close
+        </button>
+
+      </div>
+
+    </div>
+  </div>
+)}
+
+{showHistoryPopup && (
+  <div
+    className="popup-overlay"
+    onClick={() => setShowHistoryPopup(false)}
+  >
+    <div
+      className="history-popup-card"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3>Version History</h3>
+
+      {history.length === 0 && (
+        <p>No history available</p>
+      )}
+
+      {history.map((h) => (
+        <details key={h.id} className="history-dropdown">
+          <summary>
+            Version v{h.version} - {new Date(h.createdAt).toLocaleDateString()}
+          </summary>
+
+          <div className="history-content">
+            <p><b>Summary:</b> {h.summary}</p>
+            <p>
+              <b>Edited By:</b> {h.editedBy.name} ({h.editedBy.email})
+            </p>
+            <p>
+              <b>Date:</b> {new Date(h.createdAt).toLocaleString()}
+            </p>
+          </div>
+        </details>
       ))}
 
-    </tr>
+      <button
+        onClick={() => setShowHistoryPopup(false)}
+        className="black-btn"
+      >
+        Close
+      </button>
 
-  ))}
-
-</tbody>
-
-      </table>
-
-    )}
-
-    <button
-      onClick={confirmImport}
-      style={{
-        background: "#16a34a",
-        marginRight: "10px"
-      }}
-    >
-      Confirm Import
-    </button>
-
-    <button
-      onClick={() => setShowPreview(false)}
-      style={{
-        background: "#dc2626"
-      }}
-    >
-      Cancel
-    </button>
-
+    </div>
   </div>
-
 )}
 
     </div>
-  );
+  </div>
+);
 }
