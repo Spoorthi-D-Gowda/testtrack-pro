@@ -12,19 +12,22 @@ const app = express();
 
 const cors = require("cors");
 const exportRoutes = require("./routes/export");
-app.use("/api/export", exportRoutes);
+const suiteRoutes = require("./routes/suite");
 
-app.use("/api/dashboard", dashboardRoutes);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(
-  cors({
-    origin: "http://localhost:3000",
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "x-auth-token"],
+  credentials: true,
+}));
 
+app.use("/api/suites", suiteRoutes);
+app.use("/api/export", exportRoutes);
+
+app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/bugs", bugRoutes);
 
 
