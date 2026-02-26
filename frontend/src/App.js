@@ -10,6 +10,7 @@ import ResetPassword from "./pages/ResetPassword";
 import TestCases from "./pages/TestCases";
 import TestSuites from "./pages/TestSuites";
 import ExecuteTestCase from "./pages/ExecuteTestCase";
+import TestRuns from "./pages/TestRuns";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
@@ -69,6 +70,14 @@ function App() {
 <Route path="/dashboard/testcases/view" element={<Dashboard />} />
 <Route path="/dashboard/testcases/create" element={<Dashboard />} />
 
+<Route
+  path="/testruns"
+  element={
+    <PrivateRoute>
+      <TestRuns />
+    </PrivateRoute>
+  }
+/>
 <Route path="/suites" element={
   <PrivateRoute>
             <TestSuites />

@@ -8,6 +8,8 @@ const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
 
 const prisma = new PrismaClient();
+const authMiddleware = require("../middleware/auth");
+const adminMiddleware = require("../middleware/admin");
 
 // ================= REGISTER =================
 router.post(
@@ -198,5 +200,29 @@ router.post("/reset-password/:token", async (req, res) => {
   }
 });
 
+// ================= GET ALL USERS (ADMIN ONLY) =================
+router.get(
+  "/users",
+  authMiddleware,
+  adminMiddleware,
+  async (req, res) => {
+    try {
 
+      const users = await prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      res.json(users);
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: "Failed to fetch users" });
+    }
+  }
+);
 module.exports = router;

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../auth.css";
 
 export default function ExecuteTestCase() {
@@ -11,27 +11,32 @@ export default function ExecuteTestCase() {
   const [execution, setExecution] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const runId = queryParams.get("runId");
+
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
 
   // ================= START EXECUTION =================
-  const startExecution = async () => {
-    try {
-      const res = await axios.post(
-        `http://localhost:5000/api/executions/start/${testCaseId}`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+const startExecution = async () => {
+  try {
+    const res = await axios.post(
+      `http://localhost:5000/api/executions/start/${testCaseId}`,
+      {},
+      {
+        headers: { "x-auth-token": token },
+        params: runId ? { runId } : {},
+      }
+    );
 
-      setExecutionId(res.data.executionId);
+    setExecutionId(res.data.executionId);
 
-    } catch (err) {
-      alert(err.response?.data?.msg || "Failed to start execution");
-    }
-  };
+  } catch (err) {
+    alert("Failed to start execution");
+  }
+};
 
   // ================= FETCH EXECUTION =================
   const fetchExecution = async (id) => {

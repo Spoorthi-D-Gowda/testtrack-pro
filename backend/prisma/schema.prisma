@@ -22,6 +22,8 @@ model User {
   templates   TestCaseTemplate[]
   testSuites  TestSuite[]
   executions  TestExecution[]
+  createdRuns TestRun[] @relation("CreatedRuns")
+  assignments TestRunAssignment[]
 }
 
 model TestCase {
@@ -69,6 +71,7 @@ model TestCase {
   attachments Attachment[]
   suites      SuiteTestCase[]
   executions  TestExecution[]
+  runs        TestRunTestCase[]
 }
 
 model TestCaseVersion {
@@ -182,6 +185,8 @@ model TestExecution {
   completedAt   DateTime?
   totalTime     Int?      // store in seconds
   stepExecutions TestStepExecution[]
+  testRun        TestRun? @relation(fields: [testRunId], references: [id])
+  testRunId      Int?
 }
 
 model TestStepExecution {
@@ -193,4 +198,35 @@ model TestStepExecution {
   actual       String         @default("")
   status       String         @default("Pending")
   notes        String         @default("")
+}
+model TestRun {
+  id          Int       @id @default(autoincrement())
+  name        String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  status      String    @default("Planned")
+  createdAt   DateTime  @default(now())
+
+  createdBy   User      @relation("CreatedRuns", fields: [createdById], references: [id])
+  createdById Int
+
+  assignments TestRunAssignment[]
+  executions  TestExecution[]
+  testCases   TestRunTestCase[]
+}
+
+model TestRunAssignment {
+  id        Int     @id @default(autoincrement())
+  testRun   TestRun @relation(fields: [testRunId], references: [id])
+  testRunId Int
+  tester    User    @relation(fields: [testerId], references: [id])
+  testerId  Int
+}
+model TestRunTestCase {
+  id         Int      @id @default(autoincrement())
+  testRun    TestRun  @relation(fields: [testRunId], references: [id])
+  testRunId  Int
+  testCase   TestCase @relation(fields: [testCaseId], references: [id])
+  testCaseId Int
 }

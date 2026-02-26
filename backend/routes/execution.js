@@ -21,7 +21,13 @@ router.post(
     try {
       const testCaseId = Number(req.params.testCaseId);
 
-      // Check test case exists
+      // 👇 READ runId FROM QUERY
+      const runId = req.query.runId
+        ? Number(req.query.runId)
+        : null;
+
+      console.log("RunId received:", runId);
+
       const testCase = await prisma.testCase.findUnique({
         where: { id: testCaseId },
         include: { steps: true },
@@ -35,16 +41,16 @@ router.post(
         return res.status(400).json({ msg: "No steps found in test case" });
       }
 
-      // Create Execution
+      // 👇 SAVE testRunId
       const execution = await prisma.testExecution.create({
         data: {
           testCaseId,
           testerId: req.user.id,
           status: "In Progress",
+          testRunId: runId,
         },
       });
 
-      // Create Step Executions
       await prisma.testStepExecution.createMany({
         data: testCase.steps.map((step) => ({
           executionId: execution.id,
@@ -66,8 +72,6 @@ router.post(
     }
   }
 );
-
-
 /*
 ===========================================
 FR-EX-001: GET EXECUTION DETAILS
