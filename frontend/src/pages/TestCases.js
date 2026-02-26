@@ -1066,6 +1066,12 @@ return (
         >
           View More...
         </button>
+        <button
+  className="view-more-btn"
+  onClick={() => navigate(`/execute/${tc.id}`)}
+>
+  Execute
+</button>
       </div>
       </div>   {/* testcase-card */}
 
