@@ -9,7 +9,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import TestCases from "./pages/TestCases";
 import TestSuites from "./pages/TestSuites";
-
+import ExecuteTestCase from "./pages/ExecuteTestCase";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
@@ -75,6 +75,14 @@ function App() {
           </PrivateRoute>
   } 
   />
+  <Route
+  path="/execute/:testCaseId"
+  element={
+    <PrivateRoute>
+      <ExecuteTestCase />
+    </PrivateRoute>
+  }
+/>
 
     </Routes>
   );

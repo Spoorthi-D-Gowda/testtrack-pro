@@ -21,6 +21,7 @@ model User {
   versions    TestCaseVersion[] 
   templates   TestCaseTemplate[]
   testSuites  TestSuite[]
+  executions  TestExecution[]
 }
 
 model TestCase {
@@ -67,6 +68,7 @@ model TestCase {
   versions    TestCaseVersion[]
   attachments Attachment[]
   suites      SuiteTestCase[]
+  executions  TestExecution[]
 }
 
 model TestCaseVersion {
@@ -101,6 +103,7 @@ model TestStep {
   executedAt DateTime?
 
   testCase   TestCase @relation(fields: [testCaseId], references: [id])
+  stepExecutions TestStepExecution[]
 }
 model TestCaseTemplate {
   id          Int      @id @default(autoincrement())
@@ -167,4 +170,27 @@ model SuiteTestCase {
   testCase   TestCase  @relation(fields: [testCaseId], references: [id])
 
   @@unique([suiteId, testCaseId])
+}
+model TestExecution {
+  id            Int       @id @default(autoincrement())
+  testCase      TestCase  @relation(fields: [testCaseId], references: [id])
+  testCaseId    Int
+  tester        User      @relation(fields: [testerId], references: [id])
+  testerId      Int
+  status        String    @default("In Progress")
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  totalTime     Int?      // store in seconds
+  stepExecutions TestStepExecution[]
+}
+
+model TestStepExecution {
+  id           Int            @id @default(autoincrement())
+  execution    TestExecution  @relation(fields: [executionId], references: [id])
+  executionId  Int
+  testStep     TestStep       @relation(fields: [testStepId], references: [id])
+  testStepId   Int
+  actual       String         @default("")
+  status       String         @default("Pending")
+  notes        String         @default("")
 }

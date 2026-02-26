@@ -88,7 +88,6 @@ router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
     console.error(err);
     res.status(500).json({ msg: "Failed to load suites" });
   }
-  console.log("USER ROLE:", req.user);
 });
 // ADD TEST CASE TO SUITE
 router.post("/:suiteId/add", auth, role(["tester", "admin"]), async (req, res) => {

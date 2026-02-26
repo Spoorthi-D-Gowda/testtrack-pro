@@ -535,26 +535,46 @@ if (req.files && req.files.length > 0) {
 }
 
     // 4. Update steps (WITHOUT deleting old ones)
-    if (Array.isArray(steps)) {
+// ================= UPDATE STEPS SAFELY =================
+let parsedSteps = [];
 
-      // Delete only if user removed steps
-      await prisma.testStep.deleteMany({
-        where: { testCaseId: id },
-      });
+if (req.body.steps) {
+  try {
+    parsedSteps = JSON.parse(req.body.steps);
+  } catch (e) {
+    console.error("STEP PARSE ERROR:", e);
+  }
+}
 
-      await prisma.testStep.createMany({
-        data: steps.map((s, index) => ({
-          testCaseId: id,
-          stepNo: index + 1,
-          action: s.action,
-          testData: s.testData || "",
-          expected: s.expected,
-          status: "Pending",
-          actual: "",
-          notes: "",
-        })),
-      });
-    }
+if (Array.isArray(parsedSteps)) {
+
+  // IMPORTANT:
+  // Delete executions first to avoid FK error
+  await prisma.testStepExecution.deleteMany({
+    where: {
+      testStep: {
+        testCaseId: id,
+      },
+    },
+  });
+
+  await prisma.testStep.deleteMany({
+    where: { testCaseId: id },
+  });
+
+  await prisma.testStep.createMany({
+    data: parsedSteps.map((s, index) => ({
+      testCaseId: id,
+      stepNo: index + 1,
+      action: s.action,
+      testData: s.testData || "",
+      expected: s.expected,
+      status: "Pending",
+      actual: "",
+      notes: "",
+    })),
+  });
+}
 
     return res.json({
       msg: "Test case updated successfully ",
@@ -777,10 +797,19 @@ router.delete("/:id/permanent", auth, role(["admin"]), async (req, res) => {
       });
     }
 
-    // Delete steps first (foreign key)
-    await prisma.testStep.deleteMany({
-      where: { testCaseId: id }
-    });
+// First delete step executions
+await prisma.testStepExecution.deleteMany({
+  where: {
+    testStep: {
+      testCaseId: id,
+    },
+  },
+});
+
+// Then delete steps
+await prisma.testStep.deleteMany({
+  where: { testCaseId: id },
+});
 
     // Delete versions
     await prisma.testCaseVersion.deleteMany({
@@ -817,6 +846,16 @@ router.put("/step/:stepId", auth, role(["tester", "admin"]), async (req, res) =>
       status,
       notes,
     } = req.body;
+
+    let parsedSteps = [];
+
+if (req.body.steps) {
+  try {
+    parsedSteps = JSON.parse(req.body.steps);
+  } catch (err) {
+    return res.status(400).json({ msg: "Invalid steps format" });
+  }
+}
 
     // Check if step exists
     const existingStep = await prisma.testStep.findUnique({

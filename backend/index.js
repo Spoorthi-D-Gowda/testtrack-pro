@@ -13,6 +13,7 @@ const app = express();
 const cors = require("cors");
 const exportRoutes = require("./routes/export");
 const suiteRoutes = require("./routes/suite");
+const executionRoutes = require("./routes/execution");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,9 +31,8 @@ app.use("/api/export", exportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/bugs", bugRoutes);
 
-
 app.use("/api/testcases", testCaseRoutes);
-
+app.use("/api/executions", executionRoutes);
 
 app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
