@@ -141,7 +141,20 @@ const openRunCases = async (runId) => {
     alert("Failed to load test cases");
   }
 };
-
+const handleTestCaseSelect = (id) => {
+  setSelectedTestCases((prev) =>
+    prev.includes(id)
+      ? prev.filter((tcId) => tcId !== id)
+      : [...prev, id]
+  );
+};
+const handleTesterSelect = (id) => {
+  setSelectedTesters((prev) =>
+    prev.includes(id)
+      ? prev.filter((testerId) => testerId !== id)
+      : [...prev, id]
+  );
+};
   return (
     <div className="auth-container">
       <div className="auth-card test-card">
@@ -180,52 +193,51 @@ const openRunCases = async (runId) => {
             onChange={(e) => setEndDate(e.target.value)}
             required
           />
+          
+<h4>Select Testers</h4>
 
-          <h4>Select Testers</h4>
+<div className="selection-list">
+  {users.map((tester) => (
+    <label key={tester.id} className="selection-item">
+      <input
+        type="checkbox"
+        value={tester.id}
+        checked={selectedTesters.includes(tester.id)}
+        onChange={() => handleTesterSelect(tester.id)}
+      />
 
-          <div className="modal-list">
-            {users
-              .filter((u) => u.role === "tester")
-              .map((user) => (
-                <div
-                  key={user.id}
-                  className="modal-row"
-                  onClick={() => toggleTester(user.id)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedTesters.includes(user.id)}
-                    readOnly
-                  />
-                  <div>{user.name} ({user.email})</div>
-                </div>
-              ))}
-          </div>
+      <div className="selection-content">
+        <span className="selection-title">
+          {tester.name}
+        </span>
+        <span className="selection-sub">
+          {tester.email}
+        </span>
+      </div>
+    </label>
+  ))}
+</div>
 
               <h4>Select Test Cases</h4>
 
-<div className="modal-list">
-  {testCases.map(tc => (
-    <div
-      key={tc.id}
-      className="modal-row"
-      onClick={() => {
-        if (selectedTestCases.includes(tc.id)) {
-          setSelectedTestCases(
-            selectedTestCases.filter(id => id !== tc.id)
-          );
-        } else {
-          setSelectedTestCases([...selectedTestCases, tc.id]);
-        }
-      }}
-    >
+<div className="selection-list">
+  {testCases.map((tc) => (
+    <label key={tc.id} className="selection-item">
       <input
         type="checkbox"
         checked={selectedTestCases.includes(tc.id)}
-        readOnly
+        onChange={() => handleTestCaseSelect(tc.id)}
       />
-      <div>{tc.testCaseId} - {tc.title}</div>
-    </div>
+
+      <div className="selection-content">
+        <span className="selection-title">
+          {tc.testCaseId}
+        </span>
+        <span className="selection-sub">
+          {tc.title}
+        </span>
+      </div>
+    </label>
   ))}
 </div>
 
@@ -269,6 +281,7 @@ const openRunCases = async (runId) => {
                 <p>{run.testCases?.length || 0}</p>
               </div>
             </div>
+
     <button
   className="secondary-btn"
   onClick={() => openRunCases(run.id)}

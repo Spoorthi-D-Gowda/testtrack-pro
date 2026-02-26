@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../auth.css";
@@ -20,7 +20,7 @@ const runId = queryParams.get("runId");
     sessionStorage.getItem("token");
 
   // ================= START EXECUTION =================
-const startExecution = async () => {
+const startExecution = useCallback(async () => {
   try {
     const res = await axios.post(
       `http://localhost:5000/api/executions/start/${testCaseId}`,
@@ -36,25 +36,25 @@ const startExecution = async () => {
   } catch (err) {
     alert("Failed to start execution");
   }
-};
+}, [testCaseId, token, runId]);
 
   // ================= FETCH EXECUTION =================
-  const fetchExecution = async (id) => {
-    try {
-      const res = await axios.get(
-        `http://localhost:5000/api/executions/${id}`,
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+const fetchExecution = useCallback(async (id) => {
+  try {
+    const res = await axios.get(
+      `http://localhost:5000/api/executions/${id}`,
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
 
-      setExecution(res.data);
-      setLoading(false);
+    setExecution(res.data);
+    setLoading(false);
 
-    } catch (err) {
-      alert("Failed to fetch execution");
-    }
-  };
+  } catch (err) {
+    alert("Failed to fetch execution");
+  }
+}, [token]);
 
   // ================= UPDATE STEP (AUTO SAVE) =================
 const updateStep = async (stepExecutionId, field, value) => {
@@ -102,15 +102,15 @@ const updateStep = async (stepExecutionId, field, value) => {
     }
   };
 
-  useEffect(() => {
-    startExecution();
-  }, []);
+useEffect(() => {
+  startExecution();
+}, [startExecution]);
 
-  useEffect(() => {
-    if (executionId) {
-      fetchExecution(executionId);
-    }
-  }, [executionId]);
+useEffect(() => {
+  if (executionId) {
+    fetchExecution(executionId);
+  }
+}, [executionId, fetchExecution]);
 
   if (loading) {
     return (
@@ -119,6 +119,33 @@ const updateStep = async (stepExecutionId, field, value) => {
       </div>
     );
   }
+  const handleEvidenceUpload = async (stepId, file) => {
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    await axios.post(
+      `http://localhost:5000/api/executions/step/${stepId}/evidence`,
+      formData,
+      {
+        headers: {
+          "x-auth-token": token,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    alert("Evidence uploaded successfully");
+
+    // 🔥 Refresh execution to show new evidence
+    fetchExecution(executionId);
+
+  } catch (err) {
+    alert(err.response?.data?.msg || "Upload failed");
+  }
+};
 
   return (
     <div className="auth-container">
@@ -161,8 +188,36 @@ const updateStep = async (stepExecutionId, field, value) => {
                 updateStep(stepExec.id, "notes", e.target.value)
               }
             />
+          {/* ===== Evidence Upload ===== */}
+<div style={{ marginTop: "10px" }}>
+  <label><b>Upload Evidence:</b></label>
+  <input
+    type="file"
+    onChange={(e) =>
+      handleEvidenceUpload(stepExec.id, e.target.files[0])
+    }
+  />
+</div>
+{/* ===== Display Uploaded Evidence ===== */}
+{stepExec.evidences && stepExec.evidences.length > 0 && (
+  <div style={{ marginTop: "8px" }}>
+    <b>Evidence Files:</b>
+    {stepExec.evidences.map((ev) => (
+      <div key={ev.id}>
+        <a
+          href={`http://localhost:5000/${ev.filePath}`}
+          target="_blank"
+          rel="noreferrer"
+        >
+          {ev.fileName}
+        </a>
+      </div>
+    ))}
+  </div>
+)}
           </div>
         ))}
+
 
         <button
           className="success-btn"

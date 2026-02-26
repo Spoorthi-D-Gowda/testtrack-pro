@@ -92,8 +92,9 @@ router.get(
         include: {
           testCase: true,
           stepExecutions: {
-            include: {
-              testStep: true,
+  include: {
+    testStep: true,
+    evidences: true,
             },
             orderBy: {
               testStep: {
@@ -159,6 +160,23 @@ const updated = await prisma.testStepExecution.update({
   }
 );
 
+const multer = require("multer");
+const path = require("path");
+
+const evidenceStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/executions/");
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + "-" + file.originalname;
+    cb(null, uniqueName);
+  },
+});
+
+const evidenceUpload = multer({
+  storage: evidenceStorage,
+  limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max global
+});
 
 /*
 ===========================================
@@ -215,5 +233,57 @@ router.post(
     }
   }
 );
+router.post(
+  "/step/:stepExecutionId/evidence",
+  auth,
+  role(["tester", "admin"]),
+  evidenceUpload.single("file"),
+  async (req, res) => {
+    try {
+      const stepExecutionId = Number(req.params.stepExecutionId);
 
+      if (!req.file) {
+        return res.status(400).json({ msg: "File required" });
+      }
+
+      const { mimetype, size, originalname, path: filePath } = req.file;
+
+      // File size validation
+      if (mimetype.startsWith("image/") && size > 10 * 1024 * 1024) {
+        return res.status(400).json({ msg: "Image max 10MB" });
+      }
+
+      if (mimetype.startsWith("video/") && size > 100 * 1024 * 1024) {
+        return res.status(400).json({ msg: "Video max 100MB" });
+      }
+
+      if (
+        (mimetype === "text/plain" ||
+          mimetype === "application/json") &&
+        size > 50 * 1024 * 1024
+      ) {
+        return res.status(400).json({ msg: "Log max 50MB" });
+      }
+
+      const evidence = await prisma.executionEvidence.create({
+        data: {
+          fileName: originalname,
+          filePath,
+          fileType: mimetype,
+          fileSize: size,
+          stepExecutionId,
+        },
+      });
+
+      res.json({
+        msg: "Evidence uploaded successfully",
+        data: evidence,
+      });
+
+    } catch (err) {
+      console.error("EVIDENCE ERROR:", err);
+      res.status(500).json({ msg: "Upload failed" });
+    }
+  }
+);
 module.exports = router;

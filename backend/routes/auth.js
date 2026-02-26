@@ -8,6 +8,7 @@ const { PrismaClient } = require("@prisma/client");
 const router = express.Router();
 
 const prisma = new PrismaClient();
+const role = require("../middleware/role");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 
@@ -201,11 +202,7 @@ router.post("/reset-password/:token", async (req, res) => {
 });
 
 // ================= GET ALL USERS (ADMIN ONLY) =================
-router.get(
-  "/users",
-  authMiddleware,
-  adminMiddleware,
-  async (req, res) => {
+router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) => {
     try {
 
       const users = await prisma.user.findMany({

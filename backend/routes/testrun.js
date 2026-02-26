@@ -174,18 +174,23 @@ router.get("/", auth, async (req, res) => {
     if (req.user.role === "admin") {
       // Admin sees all runs
       runs = await prisma.testRun.findMany({
-        include: {
-          assignments: {
-            include: {
-              tester: {
-                select: { id: true, name: true, email: true },
-              },
-            },
-          },
-          executions: true,
+  include: {
+    assignments: {
+      include: {
+        tester: {
+          select: { id: true, name: true, email: true },
         },
-        orderBy: { createdAt: "desc" },
-      });
+      },
+    },
+    executions: true,
+    testCases: {
+      include: {
+        testCase: true,
+      },
+    },
+  },
+  orderBy: { createdAt: "desc" },
+});
 
     } else if (req.user.role === "tester") {
       // Tester sees only assigned runs

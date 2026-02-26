@@ -40,6 +40,8 @@ app.use("/api/auth", authRoutes);
 app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");
 });
+app.use("/uploads", express.static("uploads"));
+
 app.get("/api/profile", authMiddleware, (req, res) => {
   res.json({
     msg: "Welcome to protected route ",

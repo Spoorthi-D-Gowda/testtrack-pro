@@ -198,6 +198,7 @@ model TestStepExecution {
   actual       String         @default("")
   status       String         @default("Pending")
   notes        String         @default("")
+  evidences    ExecutionEvidence[]
 }
 model TestRun {
   id          Int       @id @default(autoincrement())
@@ -229,4 +230,15 @@ model TestRunTestCase {
   testRunId  Int
   testCase   TestCase @relation(fields: [testCaseId], references: [id])
   testCaseId Int
+}
+model ExecutionEvidence {
+  id              Int      @id @default(autoincrement())
+  fileName        String
+  filePath        String
+  fileType        String
+  fileSize        Int
+  uploadedAt      DateTime @default(now())
+
+  stepExecutionId Int
+  stepExecution   TestStepExecution @relation(fields: [stepExecutionId], references: [id], onDelete: Cascade)
 }
