@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import TestCasesManager from "./TestCases";
 import TestSuites from "./TestSuites";
+import TestRuns from "./TestRuns";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
@@ -144,6 +145,18 @@ useEffect(() => {
   Test Suites
 </button>
 )}
+{(role === "tester" || role === "admin") && (
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setActiveSection("testruns");
+      setTestCaseTab(null);
+    }}
+  >
+    Test Runs
+  </button>
+)}
+
 
         {role === "developer" && (
           <button
@@ -226,6 +239,9 @@ useEffect(() => {
 
 {activeSection === "suites" && (
   <TestSuites />
+)}
+{activeSection === "testruns" && (
+  <TestRuns />
 )}
 
 </div>
