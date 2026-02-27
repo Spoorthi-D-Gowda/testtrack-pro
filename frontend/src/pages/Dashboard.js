@@ -6,6 +6,7 @@ import TestCasesManager from "./TestCases";
 import TestSuites from "./TestSuites";
 import TestRuns from "./TestRuns";
 import Bugs from "./Bugs";
+import ExecutionHistory from "./ExecutionHistory";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
@@ -136,6 +137,19 @@ useEffect(() => {
         )}
 
 {(role === "tester" || role === "admin") && (
+  <button
+    className={`nav-btn ${
+      activeSection === "executions" ? "active" : ""
+    }`}
+    onClick={() => {
+      setActiveSection("executions");
+      setTestCaseTab(null);
+    }}
+  >
+    Execution History
+  </button>
+)}
+{(role === "tester" || role === "admin") && (
         <button 
          className="nav-btn"
          onClick={() => {
@@ -255,6 +269,9 @@ useEffect(() => {
 
 {activeSection === "mybugs" && (
   <Bugs type="assigned" />
+)}
+{activeSection === "executions" && (
+  <ExecutionHistory />
 )}
 
 </div>

@@ -10,6 +10,9 @@ export default function ExecuteTestCase() {
   const [executionId, setExecutionId] = useState(null);
   const [execution, setExecution] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [seconds, setSeconds] = useState(0);
+const [isRunning, setIsRunning] = useState(true);
+const [manualTime, setManualTime] = useState("");
 
   const location = useLocation();
 const queryParams = new URLSearchParams(location.search);
@@ -18,6 +21,27 @@ const runId = queryParams.get("runId");
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
+
+useEffect(() => {
+  let interval;
+
+  if (isRunning) {
+    interval = setInterval(() => {
+      setSeconds(prev => prev + 1);
+    }, 1000);
+  }
+
+  return () => clearInterval(interval);
+
+}, [isRunning]);
+
+const formatTime = (totalSeconds) => {
+  const hrs = Math.floor(totalSeconds / 3600);
+  const mins = Math.floor((totalSeconds % 3600) / 60);
+  const secs = totalSeconds % 60;
+
+  return `${hrs}h ${mins}m ${secs}s`;
+};
 
   // ================= START EXECUTION =================
 const startExecution = useCallback(async () => {
@@ -84,24 +108,30 @@ const updateStep = async (stepExecutionId, field, value) => {
 };
 
   // ================= COMPLETE EXECUTION =================
-  const completeExecution = async () => {
-    try {
-      await axios.post(
-        `http://localhost:5000/api/executions/complete/${executionId}`,
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+const completeExecution = async () => {
+  try {
 
-      alert("Execution completed successfully");
-      navigate("/dashboard");
+    setIsRunning(false);
 
-    } catch (err) {
-      alert("Failed to complete execution");
-    }
-  };
+    const finalTime = manualTime
+      ? Number(manualTime)
+      : seconds;
 
+    await axios.post(
+      `http://localhost:5000/api/executions/complete/${executionId}`,
+      { totalTime: finalTime },
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
+
+    alert("Execution completed successfully");
+    navigate("/dashboard");
+
+  } catch (err) {
+    alert("Failed to complete execution");
+  }
+};
 useEffect(() => {
   startExecution();
 }, [startExecution]);
@@ -168,6 +198,35 @@ const quickFail = async (stepExecutionId) => {
       <div className="auth-card test-card">
 
         <h2>Execution: {execution?.testCase?.title}</h2>
+
+        <div className="timer-box">
+  <h3>Execution Timer: {formatTime(seconds)}</h3>
+
+  {isRunning ? (
+    <button
+      className="warning-btn"
+      onClick={() => setIsRunning(false)}
+    >
+      Pause
+    </button>
+  ) : (
+    <button
+      className="primary-btn"
+      onClick={() => setIsRunning(true)}
+    >
+      Resume
+    </button>
+  )}
+
+  <div style={{ marginTop: "10px" }}>
+    <label>Manual Time (seconds): </label>
+    <input
+      type="number"
+      value={manualTime}
+      onChange={(e) => setManualTime(e.target.value)}
+    />
+  </div>
+</div>
 
         {execution?.stepExecutions.map((stepExec, index) => (
           <div key={stepExec.id} className="step-card">

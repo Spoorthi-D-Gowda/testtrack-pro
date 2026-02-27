@@ -6,6 +6,48 @@ const role = require("../middleware/role");
 const prisma = new PrismaClient();
 const router = express.Router();
 
+router.post(
+  "/complete/:executionId",
+  auth,
+  role(["tester"]),
+  async (req, res) => {
+    try {
+      const executionId = Number(req.params.executionId);
+      const { totalTime } = req.body; // 👈 receive from frontend
+
+      const stepExecutions = await prisma.testStepExecution.findMany({
+        where: { executionId },
+      });
+
+      let finalStatus = "Pass";
+
+      if (stepExecutions.some(s => s.status === "Fail")) {
+        finalStatus = "Fail";
+      } else if (stepExecutions.some(s => s.status === "Blocked")) {
+        finalStatus = "Blocked";
+      }
+
+      const updated = await prisma.testExecution.update({
+        where: { id: executionId },
+        data: {
+          status: finalStatus,
+          completedAt: new Date(),
+          totalTime: totalTime, // 👈 store seconds
+        },
+      });
+
+      res.json({
+        msg: "Execution completed",
+        execution: updated,
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ msg: "Failed to complete execution" });
+    }
+  }
+);
+
 /*
 ===========================================
 FR-EX-001: START EXECUTION
@@ -72,6 +114,43 @@ router.post(
     }
   }
 );
+
+router.get(
+  "/",
+  auth,
+  role(["tester", "admin"]),
+  async (req, res) => {
+    try {
+
+      let whereCondition = {};
+
+      // Tester sees only their executions
+      if (req.user.role === "tester") {
+        whereCondition.testerId = req.user.id;
+      }
+
+      const executions = await prisma.testExecution.findMany({
+        where: whereCondition,
+        include: {
+          testCase: true,
+          tester: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy: {
+          startedAt: "desc",
+        },
+      });
+
+      res.json(executions);
+
+    } catch (err) {
+      console.error("FETCH EXECUTIONS ERROR:", err);
+      res.status(500).json({ msg: "Failed to fetch executions" });
+    }
+  }
+);
+
 /*
 ===========================================
 FR-EX-001: GET EXECUTION DETAILS
@@ -117,7 +196,37 @@ router.get(
     }
   }
 );
+router.get(
+  "/:executionId",
+  auth,
+  async (req, res) => {
+    try {
+      const executionId = Number(req.params.executionId);
 
+      const execution = await prisma.testExecution.findUnique({
+        where: { id: executionId },
+        include: {
+          testCase: true,
+          stepExecutions: {
+            include: {
+              testStep: true,
+            },
+          },
+          tester: true,
+        },
+      });
+
+      if (!execution) {
+        return res.status(404).json({ msg: "Execution not found" });
+      }
+
+      res.json(execution);
+
+    } catch (err) {
+      res.status(500).json({ msg: "Failed to fetch execution details" });
+    }
+  }
+);
 
 /*
 ===========================================
