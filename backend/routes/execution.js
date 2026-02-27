@@ -153,27 +153,37 @@ router.get(
 
 /*
 ===========================================
-FR-EX-001: GET EXECUTION DETAILS
+FR-EX-006: GET EXECUTION HISTORY BY TEST CASE
 ===========================================
-GET /api/executions/:executionId
+GET /api/executions/history/:testCaseId
 */
 
 router.get(
-  "/:executionId",
+  "/history/:testCaseId",
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
     try {
-      const executionId = Number(req.params.executionId);
 
-      const execution = await prisma.testExecution.findUnique({
-        where: { id: executionId },
+      const testCaseId = Number(req.params.testCaseId);
+
+      if (!testCaseId || isNaN(testCaseId)) {
+        return res.status(400).json({
+          msg: "Invalid testCaseId"
+        });
+      }
+
+      const executions = await prisma.testExecution.findMany({
+  where: {
+    testCaseId: testCaseId,
+    status: {
+      not: "In Progress",
+    },
+  },
         include: {
-          testCase: true,
           stepExecutions: {
-  include: {
-    testStep: true,
-    evidences: true,
+            include: {
+              testStep: true,
             },
             orderBy: {
               testStep: {
@@ -181,21 +191,31 @@ router.get(
               },
             },
           },
+          tester: {
+            select: { id: true, name: true },
+          },
+        },
+        orderBy: {
+          startedAt: "desc",
         },
       });
 
-      if (!execution) {
-        return res.status(404).json({ msg: "Execution not found" });
-      }
-
-      res.json(execution);
+      res.json(executions);
 
     } catch (err) {
-      console.error("GET EXECUTION ERROR:", err);
-      res.status(500).json({ msg: "Failed to fetch execution" });
+      console.error("FETCH HISTORY ERROR:", err);
+      res.status(500).json({ msg: "Failed to fetch execution history" });
     }
   }
 );
+
+/*
+===========================================
+FR-EX-001: GET EXECUTION DETAILS
+===========================================
+GET /api/executions/:executionId
+*/
+
 router.get(
   "/:executionId",
   auth,
@@ -227,7 +247,6 @@ router.get(
     }
   }
 );
-
 /*
 ===========================================
 FR-EX-001: UPDATE STEP (AUTO SAVE)
@@ -287,61 +306,7 @@ const evidenceUpload = multer({
   limits: { fileSize: 100 * 1024 * 1024 }, // 100MB max global
 });
 
-/*
-===========================================
-FR-EX-001: COMPLETE EXECUTION
-===========================================
-POST /api/executions/complete/:executionId
-*/
 
-router.post(
-  "/complete/:executionId",
-  auth,
-  role(["tester", "admin"]),
-  async (req, res) => {
-    try {
-      const executionId = Number(req.params.executionId);
-
-      const execution = await prisma.testExecution.findUnique({
-        where: { id: executionId },
-        include: { stepExecutions: true },
-      });
-
-      if (!execution) {
-        return res.status(404).json({ msg: "Execution not found" });
-      }
-
-      const steps = execution.stepExecutions;
-
-      let overallStatus = "Pass";
-
-      if (steps.some((s) => s.status === "Fail")) {
-        overallStatus = "Fail";
-      } else if (steps.some((s) => s.status === "Blocked")) {
-        overallStatus = "Blocked";
-      } else if (steps.some((s) => s.status === "Pending")) {
-        overallStatus = "In Progress";
-      }
-
-      const completed = await prisma.testExecution.update({
-        where: { id: executionId },
-        data: {
-          status: overallStatus,
-          completedAt: new Date(),
-        },
-      });
-
-      res.json({
-        msg: "Execution completed",
-        data: completed,
-      });
-
-    } catch (err) {
-      console.error("COMPLETE EXECUTION ERROR:", err);
-      res.status(500).json({ msg: "Failed to complete execution" });
-    }
-  }
-);
 router.post(
   "/step/:stepExecutionId/evidence",
   auth,

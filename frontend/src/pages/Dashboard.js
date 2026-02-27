@@ -7,10 +7,12 @@ import TestSuites from "./TestSuites";
 import TestRuns from "./TestRuns";
 import Bugs from "./Bugs";
 import ExecutionHistory from "./ExecutionHistory";
+import ExecutionCompare from "./ExecutionCompare";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [selectedCompareId, setSelectedCompareId] = useState(null);
   const [testCaseTab, setTestCaseTab] = useState("create");
   const [showTestCaseMenu, setShowTestCaseMenu] = useState(false);
 
@@ -149,6 +151,7 @@ useEffect(() => {
     Execution History
   </button>
 )}
+
 {(role === "tester" || role === "admin") && (
         <button 
          className="nav-btn"
@@ -271,7 +274,13 @@ useEffect(() => {
   <Bugs type="assigned" />
 )}
 {activeSection === "executions" && (
-  <ExecutionHistory />
+  <ExecutionHistory
+    setActiveSection={setActiveSection}
+    setSelectedCompareId={setSelectedCompareId}
+  />
+)}
+{activeSection === "compare" && (
+  <ExecutionCompare testCaseId={selectedCompareId} />
 )}
 
 </div>

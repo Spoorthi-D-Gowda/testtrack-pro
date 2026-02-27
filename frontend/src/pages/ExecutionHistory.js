@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import "../auth.css";
 
-export default function ExecutionHistory() {
+export default function ExecutionHistory({
+  setActiveSection,
+  setSelectedCompareId
+}) {
 
   const [executions, setExecutions] = useState([]);
   const [selectedExecution, setSelectedExecution] = useState(null);
@@ -52,6 +55,15 @@ const formatTime = (seconds) => {
     fetchExecutions();
   }, []);
 
+   const grouped = executions.reduce((acc, exec) => {
+  if (!acc[exec.testCase.id]) {
+    acc[exec.testCase.id] = [];
+  }
+  acc[exec.testCase.id].push(exec);
+  return acc;
+}, {});
+
+
   return (
     <div className="auth-card test-card">
 
@@ -61,17 +73,48 @@ const formatTime = (seconds) => {
 
         {/* LEFT LIST */}
         <div className="execution-list">
-          {executions.map(exec => (
-           <div
-  key={exec.id}
-  className="execution-card"
-  onClick={() => fetchExecutionDetails(exec.id)}
->
-              <h4>{exec.testCase.title}</h4>
-              <p>Status: {exec.status}</p>
-              <p>Time: {formatTime(exec.totalTime)}</p>
-            </div>
-          ))}
+            {Object.values(grouped).map((group) => {
+  const latest = group[0]; // already sorted desc
+
+  return (
+    <div
+      key={latest.id}
+      className="execution-card"
+      onClick={() => fetchExecutionDetails(latest.id)}
+    >
+      <h4>{latest.testCase.title}</h4>
+
+      <p>Status: {latest.status}</p>
+      <p>Time: {formatTime(latest.totalTime)}</p>
+      <p>Total Runs: {group.length}</p>
+
+      {/* Re-Execute */}
+      <button
+        className="primary-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          window.location.href = `/execute/${latest.testCase.id}`;
+        }}
+      >
+        Re-Execute
+      </button>
+
+      {/* Compare */}
+      <button
+        className="warning-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          setSelectedCompareId(latest.testCase.id);
+          setActiveSection("compare");
+        }}
+      >
+        Compare
+      </button>
+
+    </div>
+  );
+})}
+
         </div>
 
         {/* RIGHT DETAILS */}
