@@ -5,6 +5,7 @@ import { useCallback } from "react";
 import TestCasesManager from "./TestCases";
 import TestSuites from "./TestSuites";
 import TestRuns from "./TestRuns";
+import Bugs from "./Bugs";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
@@ -156,12 +157,25 @@ useEffect(() => {
     Test Runs
   </button>
 )}
-
+{(role === "tester" || role === "admin") && (
+  <button
+              className="nav-btn"
+              onClick={() => {
+  setActiveSection("bugs");
+  setTestCaseTab(null);
+}}
+            >
+              Manage Bugs
+            </button>
+)}
 
         {role === "developer" && (
           <button
             className="nav-btn"
-            onClick={() => navigate("/bugs")}
+            onClick={() => {
+  setActiveSection("mybugs");
+  setTestCaseTab(null);
+}}
           >
             My Assigned Bugs
           </button>
@@ -169,14 +183,6 @@ useEffect(() => {
 
         {role === "admin" && (
           <>
-
-            <button
-              className="nav-btn"
-              onClick={() => navigate("/bugs")}
-            >
-              Manage All Bugs
-            </button>
-
             <button
               className="nav-btn"
               onClick={() => navigate("/analytics")}
@@ -242,6 +248,13 @@ useEffect(() => {
 )}
 {activeSection === "testruns" && (
   <TestRuns />
+)}
+{activeSection === "bugs" && (
+  <Bugs type="all" />
+)}
+
+{activeSection === "mybugs" && (
+  <Bugs type="assigned" />
 )}
 
 </div>

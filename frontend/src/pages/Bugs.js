@@ -1,237 +1,159 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import "../auth.css";
-import { useNavigate } from "react-router-dom";
 
-export default function Bugs() {
-    const navigate = useNavigate();
+export default function Bugs({ type }) {
 
   const [bugs, setBugs] = useState([]);
-
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [severity, setSeverity] = useState("Medium");
-  const [status, setStatus] = useState("Open");
-
-  const [editId, setEditId] = useState(null);
+  const [developers, setDevelopers] = useState([]);
+  const [selectedBugId, setSelectedBugId] = useState(null);
+  const [selectedDeveloper, setSelectedDeveloper] = useState("");
 
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
 
-  // Fetch Bugs
-  const fetchBugs = useCallback(async () => {
+  // ================= FETCH BUGS =================
+const fetchBugs = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5000/api/bugs",
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
+
+    if (type === "assigned") {
+      setBugs(res.data.filter(b => b.assignedTo));
+    } else {
+      setBugs(res.data);
+    }
+
+  } catch (err) {
+    console.error("FETCH BUGS ERROR:", err);
+  }
+};
+
+  // ================= FETCH DEVELOPERS =================
+  const fetchDevelopers = async () => {
     try {
       const res = await axios.get(
-        "http://localhost:5000/api/bugs",
+        "http://localhost:5000/api/auth/users",
         {
-          headers: {
-            "x-auth-token": token,
-          },
+          headers: { "x-auth-token": token },
         }
       );
 
-      setBugs(res.data);
+      const devs = res.data.filter(
+        (user) => user.role === "developer"
+      );
+
+      setDevelopers(devs);
+
     } catch (err) {
-      console.error(err);
+      console.error("Failed to fetch developers:", err);
     }
-  }, [token]);
+  };
 
-  useEffect(() => {
-    fetchBugs();
-  }, [fetchBugs]);
+useEffect(() => {
+  fetchBugs();
 
-  // Add / Update Bug
-  const saveBug = async (e) => {
-    e.preventDefault();
+  const role = JSON.parse(
+    localStorage.getItem("user")
+  )?.role;
 
+  if (role === "admin" || role === "tester") {
+    fetchDevelopers();
+  }
+
+}, []);
+
+  // ================= ASSIGN BUG =================
+  const assignBug = async () => {
     try {
+      await axios.put(
+        `http://localhost:5000/api/bugs/assign/${selectedBugId}`,
+        { developerId: Number(selectedDeveloper) },
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
 
-      if (editId) {
-        // Update
-        await axios.put(
-          `http://localhost:5000/api/bugs/${editId}`,
-          {
-            title,
-            description,
-            severity,
-            status,
-          },
-          {
-            headers: {
-              "x-auth-token": token,
-            },
-          }
-        );
+      alert("Bug assigned successfully");
 
-        setEditId(null);
-
-      } else {
-        // Create
-        await axios.post(
-          "http://localhost:5000/api/bugs",
-          {
-            title,
-            description,
-            severity,
-            status,
-          },
-          {
-            headers: {
-              "x-auth-token": token,
-            },
-          }
-        );
-      }
-
-      // Clear form
-      setTitle("");
-      setDescription("");
-      setSeverity("Medium");
-      setStatus("Open");
+      setSelectedBugId(null);
+      setSelectedDeveloper("");
 
       fetchBugs();
 
     } catch (err) {
-      alert("Operation failed ❌");
-    }
-  };
-
-  // Edit Bug
-  const editBug = (bug) => {
-    setEditId(bug.id);
-    setTitle(bug.title);
-    setDescription(bug.description);
-    setSeverity(bug.severity);
-    setStatus(bug.status);
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
-  // Delete Bug
-  const deleteBug = async (id) => {
-    try {
-      await axios.delete(
-        `http://localhost:5000/api/bugs/${id}`,
-        {
-          headers: {
-            "x-auth-token": token,
-          },
-        }
-      );
-
-      fetchBugs();
-
-    } catch (err) {
-      alert("Delete failed ");
+      alert(err.response?.data?.msg || "Failed to assign bug");
     }
   };
 
   return (
     <div className="auth-container">
       <div className="auth-card test-card">
+        <h2>Bug Management</h2>
 
-        <div className="page-header">
- <span
-  className="back-link"
-  onClick={() => navigate("/dashboard")}
->
-  ← Dashboard
-</span>
-
-
-  <h2>Bug Tracker</h2>
-</div>
-
-
-        {editId && (
-          <p style={{ color: "#38bdf8" }}>
-            Editing Bug - Update and Save
-          </p>
-        )}
-
-        <form onSubmit={saveBug}>
-
-          <input
-            placeholder="Bug Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-
-          <input
-            placeholder="Bug Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            required
-          />
-
-          <select
-            value={severity}
-            onChange={(e) => setSeverity(e.target.value)}
-          >
-            <option>High</option>
-            <option>Medium</option>
-            <option>Low</option>
-          </select>
-
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-          >
-            <option>Open</option>
-            <option>In Progress</option>
-            <option>Closed</option>
-          </select>
-
-          <button>
-            {editId ? "Update Bug" : "Report Bug"}
-          </button>
-
-        </form>
-
-        <hr />
-
-        <h3>My Bugs</h3>
-
-        {bugs.length === 0 && <p>No bugs reported</p>}
+        {bugs.length === 0 && <p>No bugs found</p>}
 
         {bugs.map((bug) => (
-          <div
-            key={bug.id}
-            style={{
-              border: "1px solid #334155",
-              padding: "10px",
-              marginBottom: "10px",
-              borderRadius: "5px",
-            }}
-          >
+          <div key={bug.id} className="step-card">
 
             <h4>{bug.title}</h4>
 
-            <p>{bug.description}</p>
+            <p><b>Status:</b> {bug.status}</p>
+            <p><b>Priority:</b> {bug.priority}</p>
+            <p><b>Severity:</b> {bug.severity}</p>
+            <p><b>Reported By:</b> {bug.reportedBy?.name}</p>
 
-            <p>
-              <b>Severity:</b> {bug.severity} |{" "}
-              <b>Status:</b> {bug.status}
-            </p>
+            {bug.assignedTo && (
+              <p><b>Assigned To:</b> {bug.assignedTo.name}</p>
+            )}
 
-            <button
-              onClick={() => editBug(bug)}
-              style={{
-                background: "#2563eb",
-                marginRight: "10px",
-              }}
-            >
-              Edit
-            </button>
+            {!bug.assignedTo && (
+              <>
+                <button
+                  className="primary-btn"
+                  onClick={() => setSelectedBugId(bug.id)}
+                >
+                  Assign Developer
+                </button>
 
-            <button
-              onClick={() => deleteBug(bug.id)}
-              style={{ background: "#fe6f6f" }}
-            >
-              Delete
-            </button>
+                {selectedBugId === bug.id && (
+                  <div style={{ marginTop: "10px" }}>
+                    <select
+                      value={selectedDeveloper}
+                      onChange={(e) =>
+                        setSelectedDeveloper(e.target.value)
+                      }
+                    >
+                      <option value="">
+                        Select Developer
+                      </option>
+                      {developers.map((dev) => (
+                        <option
+                          key={dev.id}
+                          value={dev.id}
+                        >
+                          {dev.name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      className="success-btn"
+                      onClick={assignBug}
+                      disabled={!selectedDeveloper}
+                      style={{ marginLeft: "10px" }}
+                    >
+                      Confirm
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
 
           </div>
         ))}

@@ -146,6 +146,22 @@ useEffect(() => {
     alert(err.response?.data?.msg || "Upload failed");
   }
 };
+const quickFail = async (stepExecutionId) => {
+  try {
+    const res = await axios.post(
+      `http://localhost:5000/api/bugs/quick-fail/${stepExecutionId}`,
+      {},
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
+
+    alert("Bug created successfully");
+
+  } catch (err) {
+    alert(err.response?.data?.msg || "Failed to create bug");
+  }
+};
 
   return (
     <div className="auth-container">
@@ -180,6 +196,15 @@ useEffect(() => {
               <option>Blocked</option>
               <option>Skipped</option>
             </select>
+
+            {stepExec.status === "Fail" && (
+  <button
+    className="danger-btn"
+    onClick={() => quickFail(stepExec.id)}
+  >
+    Fail & Create Bug
+  </button>
+)}
 
             <textarea
               placeholder="Notes"
