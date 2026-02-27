@@ -16,7 +16,6 @@ model User {
   createdAt   DateTime   @default(now())
   resetExpiry DateTime?
   resetToken  String?
-  bugs        Bug[]
   testCases   TestCase[]
   versions    TestCaseVersion[] 
   templates   TestCaseTemplate[]
@@ -24,6 +23,8 @@ model User {
   executions  TestExecution[]
   createdRuns TestRun[] @relation("CreatedRuns")
   assignments TestRunAssignment[]
+  reportedBugs Bug[] @relation("ReportedBugs")
+  assignedBugs Bug[] @relation("AssignedBugs")
 }
 
 model TestCase {
@@ -72,6 +73,7 @@ model TestCase {
   suites      SuiteTestCase[]
   executions  TestExecution[]
   runs        TestRunTestCase[]
+  bugs        Bug[]
 }
 
 model TestCaseVersion {
@@ -134,16 +136,6 @@ model Attachment {
   testCase    TestCase @relation(fields: [testCaseId], references: [id])
 }
 
-model Bug {
-  id          Int      @id @default(autoincrement())
-  title       String
-  description String
-  severity    String
-  status      String
-  createdAt   DateTime @default(now())
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
- }
 model TestSuite {
   id            Int      @id @default(autoincrement())
   name          String
@@ -185,6 +177,7 @@ model TestExecution {
   completedAt   DateTime?
   totalTime     Int?      // store in seconds
   stepExecutions TestStepExecution[]
+  bugs           Bug[]
   testRun        TestRun? @relation(fields: [testRunId], references: [id])
   testRunId      Int?
 }
@@ -199,6 +192,7 @@ model TestStepExecution {
   status       String         @default("Pending")
   notes        String         @default("")
   evidences    ExecutionEvidence[]
+  bugs           Bug[]
 }
 model TestRun {
   id          Int       @id @default(autoincrement())
@@ -241,4 +235,29 @@ model ExecutionEvidence {
 
   stepExecutionId Int
   stepExecution   TestStepExecution @relation(fields: [stepExecutionId], references: [id], onDelete: Cascade)
+}
+model Bug {
+  id              Int       @id @default(autoincrement())
+  title           String
+  description     String
+  status          String    @default("Open")
+  priority        String    @default("Medium")
+  severity        String    @default("Major")
+
+  testCaseId      Int?
+  testCase        TestCase? @relation(fields: [testCaseId], references: [id])
+
+  executionId     Int?
+  execution       TestExecution? @relation(fields: [executionId], references: [id])
+
+  stepExecutionId Int?
+  stepExecution   TestStepExecution? @relation(fields: [stepExecutionId], references: [id])
+
+  reportedById    Int
+  reportedBy      User      @relation("ReportedBugs", fields: [reportedById], references: [id])
+
+  assignedToId    Int?
+  assignedTo      User?     @relation("AssignedBugs", fields: [assignedToId], references: [id])
+
+  createdAt       DateTime  @default(now())
 }
