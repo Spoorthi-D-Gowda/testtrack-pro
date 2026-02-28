@@ -13,6 +13,10 @@ export default function Bugs({ type }) {
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
 
+  const role =
+  localStorage.getItem("role") ||
+  sessionStorage.getItem("role");
+
   // ================= FETCH BUGS =================
 const fetchBugs = async () => {
   try {
@@ -95,7 +99,22 @@ useEffect(() => {
       alert(err.response?.data?.msg || "Failed to assign bug");
     }
   };
+const updateStatus = async (id, status, fixNotes, commitLink) => {
+  try {
+    const res = await axios.put(
+      `http://localhost:5000/api/bugs/status/${id}`,
+      { status, fixNotes, commitLink },
+      { headers: { "x-auth-token": token } }
+    );
 
+    alert(res.data.msg);   // 🔥 Show success message
+
+    fetchBugs();
+
+  } catch (err) {
+    alert(err.response?.data?.msg || "Failed to update status");
+  }
+};
   return (
     <div className="auth-container">
       <div className="auth-card test-card">
@@ -170,6 +189,49 @@ useEffect(() => {
       </button>
     </div>
   )}
+<div className="card-actions">
+{role === "developer" &&
+  (bug.status === "Open" || bug.status === "Reopened") && (
+  <button
+    className="small-action-btn execute-btn"
+    onClick={() => updateStatus(bug.id, "In_Progress")}
+  >
+    Start Work
+  </button>
+)}
+
+{role === "developer" && bug.status === "In_Progress" && (
+  <button
+    className="small-action-btn execute-btn"
+    onClick={() => {
+      const fixNotes = prompt("Enter fix notes:");
+      const commitLink = prompt("Enter commit link:");
+      updateStatus(bug.id, "Fixed", fixNotes, commitLink);
+    }}
+  >
+    Mark Fixed
+  </button>
+)}
+{role === "tester" && bug.status === "Fixed" && (
+  <>
+    <button 
+    className="small-action-btn"
+    onClick={() => updateStatus(bug.id, "Verified")}>
+      Verify
+    </button>
+    <button 
+    className="small-action-btn execute-btn"
+    onClick={() => updateStatus(bug.id, "Reopened")}>
+      Reopen
+    </button>
+  </>
+)}
+{role === "admin" && bug.status === "Verified" && (
+  <button onClick={() => updateStatus(bug.id, "Closed")}>
+    Close
+  </button>
+)}
+</div>
 </div>
         ))}
 

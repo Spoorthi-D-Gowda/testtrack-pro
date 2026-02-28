@@ -217,7 +217,22 @@ router.put(
         });
       }
 
-      // Optional: ensure assigned user is actually a developer
+      // 🔥 Fetch bug first
+      const bug = await prisma.bug.findUnique({
+        where: { id: bugId },
+      });
+
+      if (!bug) {
+        return res.status(404).json({ msg: "Bug not found" });
+      }
+
+      if (bug.status !== BugStatus.New) {
+        return res.status(400).json({
+          msg: "Only new bugs can be assigned",
+        });
+      }
+
+      // Ensure selected user is developer
       const developer = await prisma.user.findUnique({
         where: { id: developerId },
       });
@@ -232,7 +247,7 @@ router.put(
         where: { id: bugId },
         data: {
           assignedToId: developerId,
-          status: "Open",
+          status: BugStatus.Open,
         },
       });
 
@@ -247,33 +262,75 @@ router.put(
     }
   }
 );
-// Update Bug
+
 router.put(
-  "/mark-fixed/:bugId",
+  "/status/:bugId",
   auth,
-  role(["developer"]),
   async (req, res) => {
     try {
       const bugId = Number(req.params.bugId);
-      const { fixNotes, commitLink } = req.body;
+      const { status, fixNotes, commitLink } = req.body;
 
-      const updatedBug = await prisma.bug.update({
+      const bug = await prisma.bug.findUnique({
+        where: { id: bugId },
+      });
+
+      if (!bug) {
+        return res.status(404).json({ msg: "Bug not found" });
+      }
+
+      const current = bug.status;
+      const userRole = req.user.role;
+
+      const transitions = {
+        New: ["Open", "Wont_Fix", "Duplicate"],
+        Open: ["In_Progress"],
+        In_Progress: ["Fixed"],
+        Fixed: ["Verified", "Reopened"],
+        Verified: ["Closed"],
+        Reopened: ["In_Progress"],
+      };
+
+      if (!transitions[current]?.includes(status)) {
+        return res.status(400).json({
+          msg: `Invalid transition from ${current} to ${status}`,
+        });
+      }
+
+      // Role-based enforcement
+      if (current === "Open" && status === "In_Progress" && userRole !== "developer") {
+        return res.status(403).json({ msg: "Only developer can start work" });
+      }
+
+      if (current === "In_Progress" && status === "Fixed" && userRole !== "developer") {
+        return res.status(403).json({ msg: "Only developer can mark fixed" });
+      }
+
+      if (current === "Fixed" && ["Verified", "Reopened"].includes(status) && userRole !== "tester") {
+        return res.status(403).json({ msg: "Only tester can verify or reopen" });
+      }
+
+      if (current === "Verified" && status === "Closed" && userRole !== "admin") {
+        return res.status(403).json({ msg: "Only admin can close bug" });
+      }
+
+      const updated = await prisma.bug.update({
         where: { id: bugId },
         data: {
-          status: "Fixed",
-          fixNotes,
-          commitLink,
+          status,
+          fixNotes: status === "Fixed" ? fixNotes : bug.fixNotes,
+          commitLink: status === "Fixed" ? commitLink : bug.commitLink,
         },
       });
 
-      res.json({
-        msg: "Bug marked as fixed",
-        bug: updatedBug,
-      });
+     res.json({
+  msg: `Bug ${status.replace("_", " ")} successfully`,
+  bug: updated,
+});
 
     } catch (err) {
-      console.error("MARK FIXED ERROR:", err);
-      res.status(500).json({ msg: "Failed to update bug" });
+      console.error("STATUS UPDATE ERROR:", err);
+      res.status(500).json({ msg: "Failed to update status" });
     }
   }
 );
