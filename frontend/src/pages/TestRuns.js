@@ -193,7 +193,7 @@ const handleTesterSelect = (id) => {
             onChange={(e) => setEndDate(e.target.value)}
             required
           />
-          
+
 <h4>Select Testers</h4>
 
 <div className="selection-list">
@@ -248,7 +248,7 @@ const handleTesterSelect = (id) => {
         </form>
 )}
         {/* ================= RUN LIST ================= */}
-        <h3>All Test Runs</h3>
+        <h3>Test Runs</h3>
 
         {runs.length === 0 && <p>No test runs yet</p>}
 
@@ -318,27 +318,36 @@ const handleTesterSelect = (id) => {
 
       {runCases.length === 0 && <p>No test cases assigned</p>}
 
-      {runCases.map(tc => (
-        <div key={tc.id} className="modal-row">
-          <div>
-            {tc.testCaseId} - {tc.title}
-          </div>
+{runCases.map(tc => (
+  <div key={tc.id} className="suite-card-style">
 
-          <button
-            className="primary-btn"
-            
-            onClick={() =>
-              navigate(`/execute/${tc.id}?runId=${selectedRunId}`)
-            }
-          >
-            Execute
-          </button>
-        </div>
-      ))}
+    <div className="suite-left">
+      <div className="suite-title">
+        {tc.testCaseId}
+      </div>
+      <div className="suite-sub">
+        {tc.title}
+      </div>
+    </div>
 
-      <button onClick={() => setShowPopup(false)}>
+    <button
+      className="execute-small-btn"
+      onClick={() =>
+        navigate(`/execute/${tc.id}?runId=${selectedRunId}`)
+      }
+    >
+      Execute
+    </button>
+
+  </div>
+))}
+<div className="popup-side-actions">
+      <button 
+      className="popup-small-btn"
+      onClick={() => setShowPopup(false)}>
         Close
       </button>
+ </div>
     </div>
   </div>
 )}

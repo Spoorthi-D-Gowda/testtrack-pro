@@ -23,11 +23,11 @@ const fetchBugs = async () => {
       }
     );
 
-    if (type === "assigned") {
-      setBugs(res.data.filter(b => b.assignedTo));
-    } else {
-      setBugs(res.data);
-    }
+    const role =
+  localStorage.getItem("role") ||
+  sessionStorage.getItem("role");
+
+   setBugs(res.data);
 
   } catch (err) {
     console.error("FETCH BUGS ERROR:", err);
@@ -35,32 +35,37 @@ const fetchBugs = async () => {
 };
 
   // ================= FETCH DEVELOPERS =================
-  const fetchDevelopers = async () => {
-    try {
-      const res = await axios.get(
-        "http://localhost:5000/api/auth/users",
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+const fetchDevelopers = async () => {
+  try {
+    const res = await axios.get(
+      "http://localhost:5000/api/auth/users",
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
 
-      const devs = res.data.filter(
-        (user) => user.role === "developer"
-      );
+    console.log("Users response:", res);        // log full response
+    console.log("Users data:", res.data);       // safe now
 
-      setDevelopers(devs);
+    const devs = res.data.filter(
+      (user) => user.role === "developer"
+    );
 
-    } catch (err) {
-      console.error("Failed to fetch developers:", err);
-    }
-  };
+    setDevelopers(devs);
+
+  } catch (err) {
+    console.error("Failed to fetch developers:");
+    console.error(err.response?.status);
+    console.error(err.response?.data);
+  }
+};
 
 useEffect(() => {
   fetchBugs();
 
-  const role = JSON.parse(
-    localStorage.getItem("user")
-  )?.role;
+  const role =
+    localStorage.getItem("role") ||
+    sessionStorage.getItem("role");
 
   if (role === "admin" || role === "tester") {
     fetchDevelopers();
@@ -99,63 +104,73 @@ useEffect(() => {
         {bugs.length === 0 && <p>No bugs found</p>}
 
         {bugs.map((bug) => (
-          <div key={bug.id} className="step-card">
+          <div key={bug.id} className="testcase-card">
 
-            <h4>{bug.title}</h4>
+  <h4 style={{ marginBottom: "10px" }}>{bug.title}</h4>
 
-            <p><b>Status:</b> {bug.status}</p>
-            <p><b>Priority:</b> {bug.priority}</p>
-            <p><b>Severity:</b> {bug.severity}</p>
-            <p><b>Reported By:</b> {bug.reportedBy?.name}</p>
+  <div className="bug-grid">
+    <div className="field">
+      <label>Status</label>
+      <p>{bug.status}</p>
+    </div>
 
-            {bug.assignedTo && (
-              <p><b>Assigned To:</b> {bug.assignedTo.name}</p>
-            )}
+    <div className="field">
+      <label>Priority</label>
+      <p>{bug.priority}</p>
+    </div>
 
-            {!bug.assignedTo && (
-              <>
-                <button
-                  className="primary-btn"
-                  onClick={() => setSelectedBugId(bug.id)}
-                >
-                  Assign Developer
-                </button>
+    <div className="field">
+      <label>Severity</label>
+      <p>{bug.severity}</p>
+    </div>
 
-                {selectedBugId === bug.id && (
-                  <div style={{ marginTop: "10px" }}>
-                    <select
-                      value={selectedDeveloper}
-                      onChange={(e) =>
-                        setSelectedDeveloper(e.target.value)
-                      }
-                    >
-                      <option value="">
-                        Select Developer
-                      </option>
-                      {developers.map((dev) => (
-                        <option
-                          key={dev.id}
-                          value={dev.id}
-                        >
-                          {dev.name}
-                        </option>
-                      ))}
-                    </select>
+    <div className="field">
+      <label>Reported By</label>
+      <p>{bug.reportedBy?.name}</p>
+    </div>
 
-                    <button
-                      className="success-btn"
-                      onClick={assignBug}
-                      disabled={!selectedDeveloper}
-                      style={{ marginLeft: "10px" }}
-                    >
-                      Confirm
-                    </button>
-                  </div>
-                )}
-              </>
-            )}
+    <div className="field">
+      <label>Assigned To</label>
+      <p>{bug.assignedTo?.name || "-"}</p>
+    </div>
+  </div>
 
-          </div>
+  {/* Assign button section */}
+  {!bug.assignedTo && (
+    <div className="bug-action-row">
+      <button
+        className="execute-btn"
+        onClick={() => setSelectedBugId(bug.id)}
+      >
+        Assign Developer
+      </button>
+    </div>
+  )}
+
+  {selectedBugId === bug.id && (
+    <div className="assign-row">
+      <select
+        value={selectedDeveloper}
+        onChange={(e) => setSelectedDeveloper(e.target.value)}
+      >
+        <option value="">Select Developer</option>
+        {developers.map((dev) => (
+          <option key={dev.id} value={dev.id}>
+            {dev.name}
+          </option>
+        ))}
+      </select>
+
+      <button
+        className="reexecute-btn"
+        onClick={assignBug}
+        disabled={!selectedDeveloper}
+      >
+        Confirm
+      </button>
+    </div>
+  )}
+</div>
         ))}
 
       </div>

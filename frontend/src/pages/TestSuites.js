@@ -394,15 +394,55 @@ const reorder = async (id, direction) => {
           className="popup-overlay"
           onClick={() => setSelectedSuite(null)}
         >
+          
           <div
             className="auth-card"
             style={{ width: "750px", maxHeight: "85vh", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}
           >
             <h2>{selectedSuite.name}</h2>
+
+<div className="popup-top-actions">
+ <button
+    className="popup-small-btn"
+    onClick={async () => {
+      await axios.put(
+        `http://localhost:5000/api/suites/${selectedSuite.id}/archive`,
+        {},
+        { headers: { "x-auth-token": token } }
+      );
+      fetchSuites();
+      setSelectedSuite(null);
+    }}
+  >
+    Archive
+  </button>
+
+  <button
+    className="popup-small-btn"
+    onClick={async () => {
+      await axios.post(
+        `http://localhost:5000/api/suites/${selectedSuite.id}/clone`,
+        {},
+        { headers: { "x-auth-token": token } }
+      );
+      fetchSuites();
+    }}
+  >
+    Clone
+  </button>
+
+  <button
+    className="popup-small-btn"
+    onClick={() => setSelectedSuite(null)}
+  >
+    Done
+  </button> 
+  </div>
+
             <p>{selectedSuite.description}</p>
 
-            <h3 style={{ marginTop: "20px" }}>Test Cases in Suite</h3>
+            <h3 style={{ marginTop: "20px" }}>Test Cases</h3>
 
             {selectedSuite.testCases?.length === 0 && (
               <p>No test cases added.</p>
@@ -450,6 +490,22 @@ const reorder = async (id, direction) => {
 ))}
             </div>
 
+<div className="popup-side-actions">
+  <button
+    className="popup-warning-btn"
+    onClick={() => executeSuite("sequential")}
+  >
+    Execute Sequentially
+  </button>
+
+  <button
+    className="popup-warning-btn"
+    onClick={() => executeSuite("parallel")}
+  >
+    Execute Parallel
+  </button>
+</div>
+
 <h3 style={{ marginTop: "25px" }}>Add Test Case</h3>
 
 <select
@@ -466,61 +522,11 @@ const reorder = async (id, direction) => {
 </select>
 
 <button
-  className="primary-btn"
-  style={{ marginTop: "10px" }}
+  className="popup-small-btn"
   onClick={addTestCaseToSuite}
 >
   Add Test Case
 </button>
-
-            <button
-  className="primary-btn"
-  onClick={async () => {
-    await axios.put(
-      `http://localhost:5000/api/suites/${selectedSuite.id}/archive`,
-      {},
-      { headers: { "x-auth-token": token } }
-    );
-    fetchSuites();
-    setSelectedSuite(null);
-  }}
->
-  Archive Suite
-</button>
-            <button
-  className="primary-btn"
-  onClick={async () => {
-    await axios.post(
-      `http://localhost:5000/api/suites/${selectedSuite.id}/clone`,
-      {},
-      { headers: { "x-auth-token": token } }
-    );
-    fetchSuites();
-  }}
->
-  Clone Suite
-</button>
-
-<button
-  className="primary-btn"
-  onClick={() => executeSuite("sequential")}
->
-  Execute Sequentially
-</button>
-
-<button
-  className="warning-btn"
-  onClick={() => executeSuite("parallel")}
->
-  Execute Parallel
-</button>
-            <button
-              className="primary-btn"
-              style={{ marginTop: "10px" }}
-              onClick={() => setSelectedSuite(null)}
-            >
-              Close
-            </button>
           </div>
         </div>
       )}

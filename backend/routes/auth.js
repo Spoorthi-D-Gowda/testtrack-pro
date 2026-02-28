@@ -222,4 +222,21 @@ router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) 
     }
   }
 );
+
+router.get("/developers", authMiddleware, async (req, res) => {
+  try {
+    const developers = await prisma.user.findMany({
+      where: { role: "developer" },
+      select: {
+        id: true,
+        name: true,
+        email: true
+      }
+    });
+
+    res.json(developers);
+  } catch (err) {
+    res.status(500).json({ msg: "Failed to fetch developers" });
+  }
+});
 module.exports = router;

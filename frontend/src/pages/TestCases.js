@@ -1056,23 +1056,26 @@ return (
           
 </div>       {/* testcase-row-wrapper */}
       <div className="card-bottom">
-        <span className="created-by">
-          Created by: {tc.user?.name} ({tc.user?.email})
-        </span>
+  <span className="created-by">
+    Created by: {tc.user?.name} ({tc.user?.email})
+  </span>
 
-        <button
-          className="view-more-btn"
-          onClick={() => fetchHistory(tc.id)}
-        >
-          View More...
-        </button>
-        <button
-  className="view-more-btn"
-  onClick={() => navigate(`/execute/${tc.id}`)}
->
-  Execute
-</button>
-      </div>
+  <div className="card-actions">
+    <button
+      className="small-action-btn"
+      onClick={() => fetchHistory(tc.id)}
+    >
+      View More...
+    </button>
+
+    <button
+      className="small-action-btn execute-btn"
+      onClick={() => navigate(`/execute/${tc.id}`)}
+    >
+      Execute
+    </button>
+  </div>
+</div>
       </div>   {/* testcase-card */}
 
     </div>
