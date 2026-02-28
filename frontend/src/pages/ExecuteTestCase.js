@@ -17,6 +17,9 @@ const [manualTime, setManualTime] = useState("");
   const location = useLocation();
 const queryParams = new URLSearchParams(location.search);
 const runId = queryParams.get("runId");
+const suiteExecutionId = queryParams.get("suiteExecutionId");
+const sequence = Number(queryParams.get("sequence") || 0);
+
 
   const token =
     localStorage.getItem("token") ||
@@ -124,6 +127,57 @@ const completeExecution = async () => {
         headers: { "x-auth-token": token },
       }
     );
+
+// After execution complete API call
+
+// 🔵 If part of Suite Execution
+if (suiteExecutionId) {
+
+  // Fetch suite execution details
+  const suiteRes = await axios.get(
+    `http://localhost:5000/api/suites/execution/${suiteExecutionId}`,
+    { headers: { "x-auth-token": token } }
+  );
+
+  const executions = suiteRes.data.executions;
+
+  // 🟣 Sequential Mode
+  if (suiteRes.data.mode === "sequential") {
+
+    const sortedExecutions = [...executions].sort(
+      (a, b) => a.id - b.id
+    );
+
+    if (sequence + 1 < sortedExecutions.length) {
+      const next = sortedExecutions[sequence + 1];
+
+      window.location.href =
+        `/execute/${next.testCaseId}` +
+        `?suiteExecutionId=${suiteExecutionId}` +
+        `&sequence=${sequence + 1}`;
+
+      return;
+    }
+
+    // All done → go to suite page
+navigate("/dashboard", {
+  state: {
+    activeSection: "suites",
+  },
+});
+  }
+
+  // 🟢 Parallel Mode → Always go back to list
+if (suiteRes.data.mode === "parallel") {
+  navigate("/dashboard", {
+    state: {
+      activeSection: "suiteExecution",
+      suiteExecutionId: suiteExecutionId,
+    },
+  });
+  return;
+}
+}
 
     alert("Execution completed successfully");
     navigate("/dashboard");

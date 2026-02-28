@@ -12,6 +12,7 @@ import TestSuites from "./pages/TestSuites";
 import ExecuteTestCase from "./pages/ExecuteTestCase";
 import TestRuns from "./pages/TestRuns";
 import ExecutionCompare from "./pages/ExecutionCompare";
+import SuiteExecution from "./pages/SuiteExecution";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
@@ -94,6 +95,11 @@ function App() {
   }
 />
 <Route path="/compare/:testCaseId" element={<ExecutionCompare />} />
+
+<Route
+  path="/suite-execution/:suiteExecutionId"
+  element={<SuiteExecution />}
+/>
 
     </Routes>
   );

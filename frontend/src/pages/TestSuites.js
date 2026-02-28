@@ -2,7 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import axios from "axios";
 import "../auth.css";
 
-export default function TestSuites() {
+export default function TestSuites({
+  setActiveSection,
+  setSelectedSuiteExecutionId
+}) {
 
   const [suites, setSuites] = useState([]);
   const [testCases, setTestCases] = useState([]);
@@ -69,6 +72,34 @@ useEffect(() => {
 
     fetchSuites();
   };
+
+  const executeSuite = async (mode) => {
+  try {
+    const res = await axios.post(
+      `http://localhost:5000/api/suites/${selectedSuite.id}/execute`,
+      { mode },
+      { headers: { "x-auth-token": token } }
+    );
+
+    const suiteExecutionId = res.data.suiteExecutionId;
+
+    if (mode === "sequential") {
+      // 🔥 Redirect to first test case
+      const firstTestCase =
+        selectedSuite.testCases[0]?.testCase;
+
+      window.location.href = `/execute/${firstTestCase.id}?suiteExecutionId=${suiteExecutionId}&sequence=0`;
+    }
+
+    if (mode === "parallel") {
+      setSelectedSuiteExecutionId(suiteExecutionId);
+setActiveSection("suiteExecution");
+    }
+
+  } catch (err) {
+    alert("Failed to execute suite");
+  }
+};
 
 const renderSuiteTree = (parentId = null, level = 0) => {
   return activeSuites
@@ -468,6 +499,20 @@ const reorder = async (id, direction) => {
   }}
 >
   Clone Suite
+</button>
+
+<button
+  className="primary-btn"
+  onClick={() => executeSuite("sequential")}
+>
+  Execute Sequentially
+</button>
+
+<button
+  className="warning-btn"
+  onClick={() => executeSuite("parallel")}
+>
+  Execute Parallel
 </button>
             <button
               className="primary-btn"
