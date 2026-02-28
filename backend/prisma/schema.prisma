@@ -25,6 +25,7 @@ model User {
   assignments TestRunAssignment[]
   reportedBugs Bug[] @relation("ReportedBugs")
   assignedBugs Bug[] @relation("AssignedBugs")
+  suiteExecutions SuiteExecution[]
 }
 
 model TestCase {
@@ -153,6 +154,7 @@ model TestSuite {
   createdBy     User     @relation(fields: [createdById], references: [id])
 
   testCases     SuiteTestCase[]
+  suiteExecutions SuiteExecution[]
 }
 
 model SuiteTestCase {
@@ -180,6 +182,8 @@ model TestExecution {
   bugs           Bug[]
   testRun        TestRun? @relation(fields: [testRunId], references: [id])
   testRunId      Int?
+  suiteExecution SuiteExecution? @relation(fields: [suiteExecutionId], references: [id])
+  suiteExecutionId Int?
 }
 
 model TestStepExecution {
@@ -260,4 +264,18 @@ model Bug {
   assignedTo      User?     @relation("AssignedBugs", fields: [assignedToId], references: [id])
 
   createdAt       DateTime  @default(now())
+}
+model SuiteExecution {
+  id          Int      @id @default(autoincrement())
+  suite       TestSuite @relation(fields: [suiteId], references: [id])
+  suiteId     Int
+  executedBy  User     @relation(fields: [executedById], references: [id])
+  executedById Int
+
+  mode        String   // "sequential" or "parallel"
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  status      String   @default("In Progress")
+
+  executions  TestExecution[]
 }

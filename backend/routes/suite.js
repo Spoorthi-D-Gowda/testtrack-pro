@@ -211,6 +211,81 @@ router.post(
     }
   }
 );
+/*
+====================================
+FR-TS-002: EXECUTE SUITE
+====================================
+*/
+
+router.post(
+  "/:suiteId/execute",
+  auth,
+  role(["tester", "admin"]),
+  async (req, res) => {
+    try {
+      const suiteId = Number(req.params.suiteId);
+      const { mode } = req.body; // "sequential" or "parallel"
+
+      const suite = await prisma.testSuite.findUnique({
+        where: { id: suiteId },
+        include: {
+          testCases: {
+            include: { testCase: true },
+            orderBy: { order: "asc" },
+          },
+        },
+      });
+
+      if (!suite || suite.testCases.length === 0) {
+        return res.status(400).json({
+          msg: "Suite has no test cases",
+        });
+      }
+
+      // 1️⃣ Create SuiteExecution
+      const suiteExecution = await prisma.suiteExecution.create({
+        data: {
+          suiteId,
+          executedById: req.user.id,
+          mode,
+        },
+      });
+
+      // 2️⃣ Create TestExecutions for each test case
+      for (const item of suite.testCases) {
+        const execution = await prisma.testExecution.create({
+          data: {
+            testCaseId: item.testCaseId,
+            testerId: req.user.id,
+            suiteExecutionId: suiteExecution.id,
+          },
+        });
+
+        // create step executions
+        const steps = await prisma.testStep.findMany({
+          where: { testCaseId: item.testCaseId },
+          orderBy: { stepNo: "asc" },
+        });
+
+        await prisma.testStepExecution.createMany({
+          data: steps.map((step) => ({
+            executionId: execution.id,
+            testStepId: step.id,
+          })),
+        });
+      }
+
+      res.json({
+        msg: "Suite execution started",
+        suiteExecutionId: suiteExecution.id,
+      });
+
+    } catch (err) {
+      console.error("SUITE EXECUTION ERROR:", err);
+      res.status(500).json({ msg: "Failed to execute suite" });
+    }
+  }
+);
 // ARCHIVE SUITE
 router.put("/:suiteId/archive", auth, role(["tester", "admin"]), async (req, res) => {
   const suiteId = Number(req.params.suiteId);
@@ -234,5 +309,69 @@ router.put("/:suiteId/restore", auth, role(["admin"]), async (req, res) => {
 
   res.json({ msg: "Suite restored" });
 });
+router.get(
+  "/execution/:suiteExecutionId",
+  auth,
+  role(["tester", "admin"]),
+  async (req, res) => {
+    const id = Number(req.params.suiteExecutionId);
+
+    const suiteExecution =
+      await prisma.suiteExecution.findUnique({
+        where: { id },
+        include: {
+          executions: {
+            include: {
+              testCase: true,
+            },
+            orderBy: {
+              id: "asc",   // 🔥 IMPORTANT
+            },
+          },
+        },
+      });
+      if (!suiteExecution) {
+  return res.status(404).json({
+    msg: "Suite execution not found"
+  });
+}
+    res.json(suiteExecution);
+  }
+);
+
+router.get(
+  "/execution/:suiteExecutionId/report",
+  auth,
+  role(["tester", "admin"]),
+  async (req, res) => {
+    try {
+      const id = Number(req.params.suiteExecutionId);
+
+      const executions = await prisma.testExecution.findMany({
+        where: { suiteExecutionId: id },
+      });
+
+      const total = executions.length;
+      const pass = executions.filter(e => e.status === "Pass").length;
+      const fail = executions.filter(e => e.status === "Fail").length;
+      const blocked = executions.filter(e => e.status === "Blocked").length;
+
+      const progress = total === 0
+        ? 0
+        : Math.round(((pass + fail + blocked) / total) * 100);
+
+      res.json({
+        total,
+        pass,
+        fail,
+        blocked,
+        progress,
+      });
+
+    } catch (err) {
+      res.status(500).json({ msg: "Failed to fetch report" });
+    }
+  }
+);
 
 module.exports = router;

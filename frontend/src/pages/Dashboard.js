@@ -8,6 +8,8 @@ import TestRuns from "./TestRuns";
 import Bugs from "./Bugs";
 import ExecutionHistory from "./ExecutionHistory";
 import ExecutionCompare from "./ExecutionCompare";
+import SuiteExecution from "./SuiteExecution";
+import { useLocation } from "react-router-dom";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  ;
@@ -15,6 +17,7 @@ export default function Dashboard() {
   const [selectedCompareId, setSelectedCompareId] = useState(null);
   const [testCaseTab, setTestCaseTab] = useState("create");
   const [showTestCaseMenu, setShowTestCaseMenu] = useState(false);
+  const [selectedSuiteExecutionId, setSelectedSuiteExecutionId] = useState(null);
 
   const navigate = useNavigate();
 
@@ -37,6 +40,20 @@ export default function Dashboard() {
 
     navigate("/");
   }, [navigate]);
+
+  const location = useLocation();
+
+useEffect(() => {
+  if (location.state?.activeSection) {
+    setActiveSection(location.state.activeSection);
+  }
+
+  if (location.state?.suiteExecutionId) {
+    setSelectedSuiteExecutionId(
+      location.state.suiteExecutionId
+    );
+  }
+}, [location]);
 
 useEffect(() => {
   const token =
@@ -261,7 +278,10 @@ useEffect(() => {
 )}
 
 {activeSection === "suites" && (
-  <TestSuites />
+  <TestSuites
+    setActiveSection={setActiveSection}
+    setSelectedSuiteExecutionId={setSelectedSuiteExecutionId}
+  />
 )}
 {activeSection === "testruns" && (
   <TestRuns />
@@ -282,7 +302,11 @@ useEffect(() => {
 {activeSection === "compare" && (
   <ExecutionCompare testCaseId={selectedCompareId} />
 )}
-
+{activeSection === "suiteExecution" && selectedSuiteExecutionId && (
+  <SuiteExecution
+    suiteExecutionId={selectedSuiteExecutionId}
+  />
+)}
 </div>
 
     </div>

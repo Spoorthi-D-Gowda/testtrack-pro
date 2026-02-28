@@ -10,7 +10,7 @@ const router = express.Router();
 router.post(
   "/quick-fail/:stepExecutionId",
   auth,
-  role(["tester"]),
+  role(["admin","tester"]),
   async (req, res) => {
     try {
       const stepExecutionId = Number(req.params.stepExecutionId);

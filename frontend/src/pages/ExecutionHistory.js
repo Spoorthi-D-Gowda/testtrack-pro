@@ -77,41 +77,56 @@ const formatTime = (seconds) => {
   const latest = group[0]; // already sorted desc
 
   return (
-    <div
-      key={latest.id}
-      className="execution-card"
-      onClick={() => fetchExecutionDetails(latest.id)}
-    >
-      <h4>{latest.testCase.title}</h4>
+<div
+  key={latest.id}
+  className="testcase-card execution-card"
+  onClick={() => fetchExecutionDetails(latest.id)}
+>
+  <h4 className="execution-title">
+    {latest.testCase.title}
+  </h4>
 
-      <p>Status: {latest.status}</p>
-      <p>Time: {formatTime(latest.totalTime)}</p>
-      <p>Total Runs: {group.length}</p>
-
-      {/* Re-Execute */}
-      <button
-        className="primary-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          window.location.href = `/execute/${latest.testCase.id}`;
-        }}
-      >
-        Re-Execute
-      </button>
-
-      {/* Compare */}
-      <button
-        className="warning-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          setSelectedCompareId(latest.testCase.id);
-          setActiveSection("compare");
-        }}
-      >
-        Compare
-      </button>
-
+  <div className="testcase-grid execution-grid">
+     <div className="field">
+      <label>Status</label>
+      <p>{latest.status}</p>
     </div>
+
+    <div className="field">
+      <label>Time</label>
+      <p>{formatTime(latest.totalTime)}</p>
+    </div>
+
+    <div className="field">
+      <label>Total Runs</label>
+      <p>{group.length}</p>
+    </div>
+
+  </div>
+
+  <div className="execution-actions">
+    <button
+      className="compare-btn"
+      onClick={(e) => {
+        e.stopPropagation();
+        setSelectedCompareId(latest.testCase.id);
+        setActiveSection("compare");
+      }}
+    >
+      Compare
+    </button>
+
+    <button
+      className="execute-gradient-btn"
+      onClick={(e) => {
+        e.stopPropagation();
+        window.location.href = `/execute/${latest.testCase.id}`;
+      }}
+    >
+      Re-Execute
+    </button>
+  </div>
+</div>
   );
 })}
 

@@ -1,3 +1,228 @@
+/* Same style as execution history card */
+.bug-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 25px;
+  margin-bottom: 15px;
+}
+
+/* Left aligned action row */
+.bug-action-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 10px;
+}
+
+/* Assign dropdown row */
+.assign-row {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Match Execute button gradient */
+.reexecute-btn {
+  background: black;
+  border: none;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.execute-btn {
+  background: linear-gradient(90deg, #2b4fa3, #1ec7a6);
+  border: none;
+  color: white;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+/* Reduce vertical height */
+.execution-card {
+  padding: 15px 20px;   /* smaller padding */
+}
+
+/* Adjust grid for 3 columns only */
+.execution-grid {
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
+/* Increase field label size */
+.execution-card .field label {
+  font-size: 14px;        /* was 12px */
+  font-weight: 600;
+  color: #111;
+}
+
+/* Increase field value size */
+.execution-card .field p {
+  font-size: 16px;        /* was 13-14px */
+  font-weight: 500;
+  padding-top: 4px;
+  color: #1f2937;
+}
+
+/* Actions aligned right */
+.execution-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+/* Compare button */
+.compare-btn {
+  padding: 6px 16px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: black;
+  cursor: pointer;
+  color: white;
+}
+
+/* Gradient button same as Execute */
+.execute-gradient-btn {
+  padding: 6px 18px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  color: white;
+  font-weight: 500;
+  background: linear-gradient(
+    90deg,
+    #2b4ea2 0%,
+    #20c997 100%
+  );
+}
+/* Bottom section alignment */
+.card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+/* Button container */
+.card-actions {
+  display: flex;
+  gap: 12px; /* small gap like your screenshot */
+}
+
+/* Small buttons */
+.small-action-btn {
+  width: 160px;
+  padding: 10px 0;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+/* Execute button special color (like 3rd image style) */
+.execute-btn {
+  background: linear-gradient(135deg, #1e3a8a, #14b8a6);
+}
+
+.small-action-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+/* Assigned Test Case Card - Like Suite Hierarchy */
+.suite-card-style {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid  #1e7b8f; 
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* Left content */
+.suite-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.suite-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #1e293b;
+}
+
+.suite-sub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Small Execute Button (Teal Gradient like 3rd image) */
+.execute-small-btn {
+  padding: 6px 18px;
+  font-size: 13px;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  color: white;
+  background: linear-gradient(135deg, #1e7b8f, #22c1a1);
+  transition: 0.2s ease;
+}
+
+.execute-small-btn:hover {
+  transform: scale(1.05);
+  opacity: 0.9;
+}
+/* ===== POPUP ACTION BUTTONS ===== */
+.popup-top-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.popup-side-actions {
+  display: flex;
+  gap: 12px;
+  margin: 15px 0;
+}
+
+.popup-small-btn {
+  padding: 8px 16px;
+  background: black;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.popup-small-btn:hover {
+  background: #333;
+}
+
+.popup-warning-btn {
+  padding: 8px 16px;
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.popup-warning-btn:hover {
+  background: #d97706;
+}
 .compare-container {
   padding: 20px;
 }
@@ -204,11 +429,12 @@
 
 .templates-container {
   margin-top: 25px;
+  
 }
 
 .template-card {
   background: #ffffff;
-  border: 1px solid #d1d5db;
+  border: 1px solid #3a3a3a;   /* dark gray */
   border-radius: 10px;
   padding: 18px;
   margin-bottom: 15px;
@@ -227,7 +453,7 @@
 }
 
 .template-btn {
-  background: #121b2f;
+  background: linear-gradient(135deg, #1e3a8a, #14b8a6);
   color: white;
   border: none;
   padding: 8px 14px;
@@ -438,6 +664,7 @@
 }
 .testcase-card {
   background: white;
+  border: 2px solid #444; 
   padding: 20px;
   border-radius: 10px;
   margin-bottom: 20px;
