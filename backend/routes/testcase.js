@@ -549,14 +549,35 @@ if (req.body.steps) {
 if (Array.isArray(parsedSteps)) {
 
   // IMPORTANT:
-  // Delete executions first to avoid FK error
-  await prisma.testStepExecution.deleteMany({
+// 1️⃣ Find all step executions of this test case
+const stepExecutions = await prisma.testStepExecution.findMany({
+  where: {
+    testStep: {
+      testCaseId: id,
+    },
+  },
+  select: { id: true },
+});
+
+const stepExecutionIds = stepExecutions.map(se => se.id);
+
+// 2️⃣ Delete related bugs
+if (stepExecutionIds.length > 0) {
+  await prisma.bug.deleteMany({
     where: {
-      testStep: {
-        testCaseId: id,
-      },
+      stepExecutionId: { in: stepExecutionIds },
     },
   });
+}
+
+// 3️⃣ Now delete step executions
+await prisma.testStepExecution.deleteMany({
+  where: {
+    testStep: {
+      testCaseId: id,
+    },
+  },
+});
 
   await prisma.testStep.deleteMany({
     where: { testCaseId: id },

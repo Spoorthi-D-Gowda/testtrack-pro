@@ -60,6 +60,38 @@ router.post(
         });
       }
 
+const testCasePriority = stepExecution.execution.testCase.priority;
+
+let mappedPriority;
+
+if (testCasePriority === "High") {
+  mappedPriority = BugPriority.P2_High;
+} else if (testCasePriority === "Medium") {
+  mappedPriority = BugPriority.P3_Medium;
+} else if (testCasePriority === "Low") {
+  mappedPriority = BugPriority.P4_Low;
+} else {
+  mappedPriority = BugPriority.P3_Medium; // fallback
+}
+
+const testCaseSeverity = stepExecution.execution.testCase.severity;
+
+let mappedSeverity;
+
+if (testCaseSeverity === "Blocker") {
+  mappedSeverity = BugSeverity.Blocker;
+} else if (testCaseSeverity === "Critical") {
+  mappedSeverity = BugSeverity.Critical;
+} else if (testCaseSeverity === "Major") {
+  mappedSeverity = BugSeverity.Major;
+} else if (testCaseSeverity === "Minor") {
+  mappedSeverity = BugSeverity.Minor;
+} else if (testCaseSeverity === "Trivial") {
+  mappedSeverity = BugSeverity.Trivial;
+} else {
+  mappedSeverity = BugSeverity.Major; // fallback
+}
+
       const bugId = await generateBugId();
 
     try {
@@ -87,8 +119,8 @@ ${stepExecution.notes}
       executionId: stepExecution.execution.id,
       stepExecutionId: stepExecution.id,
       reportedById: req.user.id,
-      priority: BugPriority.P3_Medium,
-      severity: BugSeverity.Major,
+      priority: mappedPriority,
+      severity: mappedSeverity,
       status: BugStatus.New,
     },
   });
@@ -127,36 +159,41 @@ router.get(
   async (req, res) => {
     try {
 
+      const { priority, severity, status, sortBy } = req.query;
+
       let whereCondition = {};
 
-      // 👇 Tester sees only bugs they reported
       if (req.user.role === "tester") {
         whereCondition.reportedById = req.user.id;
       }
 
-      // 👇 Developer sees only assigned bugs
       if (req.user.role === "developer") {
         whereCondition.assignedToId = req.user.id;
       }
 
-      // 👇 Admin sees all (no filter)
+      // 🔥 Filtering
+      if (priority) whereCondition.priority = priority;
+      if (severity) whereCondition.severity = severity;
+      if (status) whereCondition.status = status;
+
+      // 🔥 Sorting
+      let orderBy = { createdAt: "desc" };
+
+      if (sortBy === "priority") {
+        orderBy = { priority: "asc" };
+      }
+
+      if (sortBy === "age") {
+        orderBy = { createdAt: "asc" };
+      }
 
       const bugs = await prisma.bug.findMany({
         where: whereCondition,
         include: {
-          reportedBy: {
-            select: { id: true, name: true, email: true },
-          },
-          assignedTo: {
-            select: { id: true, name: true, email: true },
-          },
-          testCase: true,
-          execution: true,
-          stepExecution: true,
+          reportedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy,
       });
 
       res.json(bugs);

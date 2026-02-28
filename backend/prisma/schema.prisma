@@ -309,7 +309,11 @@ model Bug {
 
   testCase      TestCase?          @relation(fields: [testCaseId], references: [id])
   execution     TestExecution?     @relation(fields: [executionId], references: [id])
-  stepExecution TestStepExecution? @relation(fields: [stepExecutionId], references: [id])
+  stepExecution TestStepExecution? @relation(
+  fields: [stepExecutionId],
+  references: [id],
+  onDelete: Cascade
+)
 
   reportedBy User  @relation("ReportedBugs", fields: [reportedById], references: [id])
   assignedTo User? @relation("AssignedBugs", fields: [assignedToId], references: [id])
