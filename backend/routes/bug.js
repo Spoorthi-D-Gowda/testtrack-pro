@@ -60,6 +60,38 @@ router.post(
         });
       }
 
+const testCasePriority = stepExecution.execution.testCase.priority;
+
+let mappedPriority;
+
+if (testCasePriority === "High") {
+  mappedPriority = BugPriority.P2_High;
+} else if (testCasePriority === "Medium") {
+  mappedPriority = BugPriority.P3_Medium;
+} else if (testCasePriority === "Low") {
+  mappedPriority = BugPriority.P4_Low;
+} else {
+  mappedPriority = BugPriority.P3_Medium; // fallback
+}
+
+const testCaseSeverity = stepExecution.execution.testCase.severity;
+
+let mappedSeverity;
+
+if (testCaseSeverity === "Blocker") {
+  mappedSeverity = BugSeverity.Blocker;
+} else if (testCaseSeverity === "Critical") {
+  mappedSeverity = BugSeverity.Critical;
+} else if (testCaseSeverity === "Major") {
+  mappedSeverity = BugSeverity.Major;
+} else if (testCaseSeverity === "Minor") {
+  mappedSeverity = BugSeverity.Minor;
+} else if (testCaseSeverity === "Trivial") {
+  mappedSeverity = BugSeverity.Trivial;
+} else {
+  mappedSeverity = BugSeverity.Major; // fallback
+}
+
       const bugId = await generateBugId();
 
     try {
@@ -87,8 +119,8 @@ ${stepExecution.notes}
       executionId: stepExecution.execution.id,
       stepExecutionId: stepExecution.id,
       reportedById: req.user.id,
-      priority: BugPriority.P3_Medium,
-      severity: BugSeverity.Major,
+      priority: mappedPriority,
+      severity: mappedSeverity,
       status: BugStatus.New,
     },
   });
@@ -127,36 +159,41 @@ router.get(
   async (req, res) => {
     try {
 
+      const { priority, severity, status, sortBy } = req.query;
+
       let whereCondition = {};
 
-      // 👇 Tester sees only bugs they reported
       if (req.user.role === "tester") {
         whereCondition.reportedById = req.user.id;
       }
 
-      // 👇 Developer sees only assigned bugs
       if (req.user.role === "developer") {
         whereCondition.assignedToId = req.user.id;
       }
 
-      // 👇 Admin sees all (no filter)
+      // 🔥 Filtering
+      if (priority) whereCondition.priority = priority;
+      if (severity) whereCondition.severity = severity;
+      if (status) whereCondition.status = status;
+
+      // 🔥 Sorting
+      let orderBy = { createdAt: "desc" };
+
+      if (sortBy === "priority") {
+        orderBy = { priority: "asc" };
+      }
+
+      if (sortBy === "age") {
+        orderBy = { createdAt: "asc" };
+      }
 
       const bugs = await prisma.bug.findMany({
         where: whereCondition,
         include: {
-          reportedBy: {
-            select: { id: true, name: true, email: true },
-          },
-          assignedTo: {
-            select: { id: true, name: true, email: true },
-          },
-          testCase: true,
-          execution: true,
-          stepExecution: true,
+          reportedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
         },
-        orderBy: {
-          createdAt: "desc",
-        },
+        orderBy,
       });
 
       res.json(bugs);
@@ -217,7 +254,22 @@ router.put(
         });
       }
 
-      // Optional: ensure assigned user is actually a developer
+      // 🔥 Fetch bug first
+      const bug = await prisma.bug.findUnique({
+        where: { id: bugId },
+      });
+
+      if (!bug) {
+        return res.status(404).json({ msg: "Bug not found" });
+      }
+
+      if (bug.status !== BugStatus.New) {
+        return res.status(400).json({
+          msg: "Only new bugs can be assigned",
+        });
+      }
+
+      // Ensure selected user is developer
       const developer = await prisma.user.findUnique({
         where: { id: developerId },
       });
@@ -232,7 +284,7 @@ router.put(
         where: { id: bugId },
         data: {
           assignedToId: developerId,
-          status: "Open",
+          status: BugStatus.Open,
         },
       });
 
@@ -247,33 +299,79 @@ router.put(
     }
   }
 );
-// Update Bug
+
 router.put(
-  "/mark-fixed/:bugId",
+  "/status/:bugId",
   auth,
-  role(["developer"]),
   async (req, res) => {
     try {
       const bugId = Number(req.params.bugId);
-      const { fixNotes, commitLink } = req.body;
+      const { status, fixNotes, commitLink, rejectionReason } = req.body;
 
-      const updatedBug = await prisma.bug.update({
+      const bug = await prisma.bug.findUnique({
+        where: { id: bugId },
+      });
+
+      if (!bug) {
+        return res.status(404).json({ msg: "Bug not found" });
+      }
+
+      const current = bug.status;
+      const userRole = req.user.role;
+
+      const transitions = {
+  New: ["Open", "Wont_Fix", "Duplicate"],
+  Open: ["In_Progress", "Wont_Fix"],   // 👈 ADD THIS
+  In_Progress: ["Fixed"],
+  Fixed: ["Verified", "Reopened"],
+  Verified: ["Closed"],
+  Reopened: ["In_Progress"],
+};
+
+      if (!transitions[current]?.includes(status)) {
+        return res.status(400).json({
+          msg: `Invalid transition from ${current} to ${status}`,
+        });
+      }
+
+      // Role-based enforcement
+      if (current === "Open" && status === "In_Progress" && userRole !== "developer") {
+        return res.status(403).json({ msg: "Only developer can start work" });
+      }
+
+      if (current === "In_Progress" && status === "Fixed" && userRole !== "developer") {
+        return res.status(403).json({ msg: "Only developer can mark fixed" });
+      }
+
+      if (current === "Fixed" && ["Verified", "Reopened"].includes(status) && userRole !== "tester") {
+        return res.status(403).json({ msg: "Only tester can verify or reopen" });
+      }
+
+      if (current === "Verified" && status === "Closed" && userRole !== "admin") {
+        return res.status(403).json({ msg: "Only admin can close bug" });
+      }
+
+      const updated = await prisma.bug.update({
         where: { id: bugId },
         data: {
-          status: "Fixed",
-          fixNotes,
-          commitLink,
-        },
+              status,
+              fixNotes: status === "Fixed" ? fixNotes : bug.fixNotes,
+              commitLink: status === "Fixed" ? commitLink : bug.commitLink,
+              description:
+            status === "Wont_Fix"
+                ? `${bug.description}\n\nRejection Reason:\n${rejectionReason}`
+                : bug.description,
+},
       });
 
-      res.json({
-        msg: "Bug marked as fixed",
-        bug: updatedBug,
-      });
+     res.json({
+  msg: `Bug ${status.replace("_", " ")} successfully`,
+  bug: updated,
+});
 
     } catch (err) {
-      console.error("MARK FIXED ERROR:", err);
-      res.status(500).json({ msg: "Failed to update bug" });
+      console.error("STATUS UPDATE ERROR:", err);
+      res.status(500).json({ msg: "Failed to update status" });
     }
   }
 );

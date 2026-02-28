@@ -1,0 +1,19 @@
+testCaseId,title,module,priority,severity,type,status,preconditions,testData,environment,stepNo,action,expected
+TC-2026-0001,Login with valid credentials,Authentication,P1_Urgent,Major,Functional,Active,User account exists,"email=test@test.com,password=123456",Chrome/Windows,1,Go to login page,Login page should load
+TC-2026-0001,Login with valid credentials,Authentication,P1_Urgent,Major,Functional,Active,User account exists,"email=test@test.com,password=123456",Chrome/Windows,2,Enter valid email and password,Credentials should be accepted
+TC-2026-0001,Login with valid credentials,Authentication,P1_Urgent,Major,Functional,Active,User account exists,"email=test@test.com,password=123456",Chrome/Windows,3,Click Login button,User should be redirected to dashboard
+
+TC-2026-0002,Login with invalid password,Authentication,P2_High,Major,Functional,Active,User account exists,"email=test@test.com,password=wrong",Chrome/Windows,1,Go to login page,Login page should load
+TC-2026-0002,Login with invalid password,Authentication,P2_High,Major,Functional,Active,User account exists,"email=test@test.com,password=wrong",Chrome/Windows,2,Enter valid email and wrong password,Credentials should be validated
+TC-2026-0002,Login with invalid password,Authentication,P2_High,Major,Functional,Active,User account exists,"email=test@test.com,password=wrong",Chrome/Windows,3,Click Login button,Error message "Invalid credentials" should display
+
+TC-2026-0003,Add item to cart,E-Commerce,P2_High,Major,Functional,Active,User logged in,"Product=Mobile",Chrome/Windows,1,Open product page,Product details should display
+TC-2026-0003,Add item to cart,E-Commerce,P2_High,Major,Functional,Active,User logged in,"Product=Mobile",Chrome/Windows,2,Click Add to Cart button,Item should be added to cart
+TC-2026-0003,Add item to cart,E-Commerce,P2_High,Major,Functional,Active,User logged in,"Product=Mobile",Chrome/Windows,3,Open cart page,Added product should be visible in cart
+
+TC-2026-0004,Checkout process,E-Commerce,P1_Urgent,Critical,Functional,Active,Items present in cart,"Payment=CreditCard",Chrome/Windows,1,Open cart page,Cart items should display
+TC-2026-0004,Checkout process,E-Commerce,P1_Urgent,Critical,Functional,Active,Items present in cart,"Payment=CreditCard",Chrome/Windows,2,Click Checkout button,Checkout page should load
+TC-2026-0004,Checkout process,E-Commerce,P1_Urgent,Critical,Functional,Active,Items present in cart,"Payment=CreditCard",Chrome/Windows,3,Enter payment details and confirm order,Order confirmation message should display
+
+TC-2026-0005,Search product,E-Commerce,P3_Medium,Minor,Functional,Active,User on homepage,"Keyword=Laptop",Chrome/Windows,1,Enter product keyword in search box,Search suggestions should appear
+TC-2026-0005,Search product,E-Commerce,P3_Medium,Minor,Functional,Active,User on homepage,"Keyword=Laptop",Chrome/Windows,2,Click Search button,Search results page should display relevant products

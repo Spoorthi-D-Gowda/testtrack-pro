@@ -1,3 +1,86 @@
+/* ==== SINGLE FILTER BOX ==== */
+/* ===== ONLY FILTER DROPDOWNS ===== */
+
+.filter-box .filter-item select {
+  width: auto;
+  margin-bottom: 0;
+  padding: 8px 35px 8px 12px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background-color: #000;
+  color: #fff;
+  appearance: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+
+.filter-box {
+  display: flex;
+  align-items: center;
+  background: black;
+  padding: 10px 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 25px;
+}
+
+/* Each dropdown */
+.filter-item {
+  position: relative;
+  background: black;
+  min-width: 160px;
+}
+
+/* Remove default arrow */
+.filter-item select {
+  padding: 8px 35px 8px 10px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+   background-color: #000;   /* 🔥 black background */
+  color: #fff; 
+  appearance: none;
+  cursor: pointer;
+}
+
+/* Custom dropdown arrow */
+.filter-item::after {
+  content: "▼";
+  position: absolute;
+right:60px;          /* moved more left */
+  top: 60%;             /* moved slightly up */
+  transform: translateY(-50%);
+  font-size: 12px;
+  pointer-events: none;
+  color:white;
+}
+
+/* Divider between dropdowns */
+.divider {
+  width: 1px;
+  height: 25px;
+  background: #1d4ed8;
+}
+
+/* Apply button */
+.apply-btn {
+  padding: 8px 18px;
+  border-radius: 8px;
+  border: none;
+  background: linear-gradient(90deg, #1d4ed8, #0ea5e9);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.apply-btn:hover {
+  opacity: 0.9;
+}
 /* Same style as execution history card */
 .bug-grid {
   display: grid;
@@ -902,7 +985,7 @@
 /* SIDEBAR (30%) */
 .sidebar {
   width: 15%;
-  background: whitesmoke;
+  background: white;
   color: black;
   padding: 30px 20px;
   display: flex;
@@ -916,7 +999,7 @@
   margin-bottom: 40px;
   font-size: 22px;
   text-align: center;
-  color: #38bdf8;
+  color:#4769c7;
 }
 
 .nav-btn {
