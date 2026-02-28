@@ -254,22 +254,29 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
         Confirm
       </button>
 
+    </div>
+
+  )}
+ <div className="bug-grid">
+    <div className="field">
 {bug.fixNotes && (
   <div className="field">
     <label>Fix Notes</label>
     <p>{bug.fixNotes}</p>
   </div>
 )}
+ </div>
 
+ <div className="field">
 {bug.commitLink && (
   <div className="field">
     <label>Commit</label>
     <p>{bug.commitLink}</p>
   </div>
 )}
+ </div>
+  </div>
 
-    </div>
-  )}
 <div className="card-actions">
 {role === "developer" &&
   (bug.status === "Open" || bug.status === "Reopened") && (
