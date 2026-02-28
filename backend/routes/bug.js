@@ -1,10 +1,20 @@
 const express = require("express");
-const { PrismaClient } = require("@prisma/client");
+const { PrismaClient, BugPriority, BugSeverity, BugStatus } = require("@prisma/client");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
 const prisma = new PrismaClient();
 const router = express.Router();
+
+const generateBugId = async () => {
+  const year = new Date().getFullYear();
+
+  const count = await prisma.bug.count();
+
+  const padded = String(count + 1).padStart(5, "0");
+
+  return `BUG-${year}-${padded}`;
+};
 
 // Create Bug
 router.post(
@@ -31,10 +41,18 @@ router.post(
         return res.status(404).json({ msg: "Step execution not found" });
       }
 
+      if (stepExecution.status !== "Fail") {
+  return res.status(400).json({
+    msg: "Bug can only be created for failed steps"
+  });
+}
+
       // Prevent duplicate bug for same failed step
       const existingBug = await prisma.bug.findFirst({
-        where: { stepExecutionId },
-      });
+  where: {
+    stepExecutionId: stepExecutionId
+  },
+});
 
       if (existingBug) {
         return res.status(400).json({
@@ -42,10 +60,15 @@ router.post(
         });
       }
 
-      const bug = await prisma.bug.create({
-        data: {
-          title: `Failure in ${stepExecution.execution.testCase.title}`,
-          description: `
+      const bugId = await generateBugId();
+
+    try {
+
+  const bug = await prisma.bug.create({
+    data: {
+      bugId,
+      title: `Failure in ${stepExecution.execution.testCase.title}`,
+      description: `
 Test Case: ${stepExecution.execution.testCase.title}
 
 Step Action:
@@ -60,19 +83,34 @@ ${stepExecution.actual}
 Notes:
 ${stepExecution.notes}
 `,
-          testCaseId: stepExecution.execution.testCase.id,
-          executionId: stepExecution.execution.id,
-          stepExecutionId: stepExecution.id,
-          reportedById: req.user.id,
-          priority: "Medium",
-          severity: "Major",
-        },
-      });
+      testCaseId: stepExecution.execution.testCase.id,
+      executionId: stepExecution.execution.id,
+      stepExecutionId: stepExecution.id,
+      reportedById: req.user.id,
+      priority: BugPriority.P3_Medium,
+      severity: BugSeverity.Major,
+      status: BugStatus.New,
+    },
+  });
 
-      res.status(201).json({
-        msg: "Bug created successfully",
-        bug,
-      });
+  return res.status(201).json({
+    msg: "Bug created successfully",
+    bug,
+  });
+
+} catch (error) {
+
+  if (error.code === "P2002") {
+    return res.status(400).json({
+      msg: "Bug already created for this step",
+    });
+  }
+
+  console.error("CREATE BUG ERROR:", error);
+  return res.status(500).json({
+    msg: "Failed to create bug",
+  });
+}
 
     } catch (err) {
       console.error("QUICK FAIL ERROR:", err);
@@ -194,7 +232,7 @@ router.put(
         where: { id: bugId },
         data: {
           assignedToId: developerId,
-          status: "Assigned",
+          status: "Open",
         },
       });
 
@@ -223,7 +261,8 @@ router.put(
         where: { id: bugId },
         data: {
           status: "Fixed",
-          description: `${fixNotes}\n\nCommit: ${commitLink || "N/A"}`,
+          fixNotes,
+          commitLink,
         },
       });
 
