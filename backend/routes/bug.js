@@ -306,7 +306,7 @@ router.put(
   async (req, res) => {
     try {
       const bugId = Number(req.params.bugId);
-      const { status, fixNotes, commitLink } = req.body;
+      const { status, fixNotes, commitLink, rejectionReason } = req.body;
 
       const bug = await prisma.bug.findUnique({
         where: { id: bugId },
@@ -320,13 +320,13 @@ router.put(
       const userRole = req.user.role;
 
       const transitions = {
-        New: ["Open", "Wont_Fix", "Duplicate"],
-        Open: ["In_Progress"],
-        In_Progress: ["Fixed"],
-        Fixed: ["Verified", "Reopened"],
-        Verified: ["Closed"],
-        Reopened: ["In_Progress"],
-      };
+  New: ["Open", "Wont_Fix", "Duplicate"],
+  Open: ["In_Progress", "Wont_Fix"],   // 👈 ADD THIS
+  In_Progress: ["Fixed"],
+  Fixed: ["Verified", "Reopened"],
+  Verified: ["Closed"],
+  Reopened: ["In_Progress"],
+};
 
       if (!transitions[current]?.includes(status)) {
         return res.status(400).json({
@@ -354,10 +354,14 @@ router.put(
       const updated = await prisma.bug.update({
         where: { id: bugId },
         data: {
-          status,
-          fixNotes: status === "Fixed" ? fixNotes : bug.fixNotes,
-          commitLink: status === "Fixed" ? commitLink : bug.commitLink,
-        },
+              status,
+              fixNotes: status === "Fixed" ? fixNotes : bug.fixNotes,
+              commitLink: status === "Fixed" ? commitLink : bug.commitLink,
+              description:
+            status === "Wont_Fix"
+                ? `${bug.description}\n\nRejection Reason:\n${rejectionReason}`
+                : bug.description,
+},
       });
 
      res.json({

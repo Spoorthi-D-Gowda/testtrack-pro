@@ -109,16 +109,15 @@ useEffect(() => {
       alert(err.response?.data?.msg || "Failed to assign bug");
     }
   };
-const updateStatus = async (id, status, fixNotes, commitLink) => {
+const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) => {
   try {
     const res = await axios.put(
       `http://localhost:5000/api/bugs/status/${id}`,
-      { status, fixNotes, commitLink },
+      { status, fixNotes, commitLink, rejectionReason },
       { headers: { "x-auth-token": token } }
     );
 
-    alert(res.data.msg);   // 🔥 Show success message
-
+    alert(res.data.msg);
     fetchBugs();
 
   } catch (err) {
@@ -254,18 +253,49 @@ const updateStatus = async (id, status, fixNotes, commitLink) => {
       >
         Confirm
       </button>
+
+{bug.fixNotes && (
+  <div className="field">
+    <label>Fix Notes</label>
+    <p>{bug.fixNotes}</p>
+  </div>
+)}
+
+{bug.commitLink && (
+  <div className="field">
+    <label>Commit</label>
+    <p>{bug.commitLink}</p>
+  </div>
+)}
+
     </div>
   )}
 <div className="card-actions">
 {role === "developer" &&
   (bug.status === "Open" || bug.status === "Reopened") && (
+   <>
   <button
     className="small-action-btn execute-btn"
     onClick={() => updateStatus(bug.id, "In_Progress")}
   >
     Start Work
   </button>
+
+    {bug.status === "Open" && (
+      <button
+        className="small-action-btn"
+        onClick={() => {
+          const reason = prompt("Enter reason for rejection:");
+          if (!reason) return;
+          updateStatus(bug.id, "Wont_Fix", null, null, reason);
+        }}
+      >
+        Won't Fix
+      </button>
+    )}
+     </>
 )}
+
 
 {role === "developer" && bug.status === "In_Progress" && (
   <button

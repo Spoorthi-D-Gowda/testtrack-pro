@@ -1,4 +1,20 @@
 /* ==== SINGLE FILTER BOX ==== */
+/* ===== ONLY FILTER DROPDOWNS ===== */
+
+.filter-box .filter-item select {
+  width: auto;
+  margin-bottom: 0;
+  padding: 8px 35px 8px 12px;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  background-color: #000;
+  color: #fff;
+  appearance: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 
 .filter-box {
   display: flex;
@@ -25,7 +41,8 @@
   border: none;
   outline: none;
   font-size: 14px;
-  background: black;
+   background-color: #000;   /* 🔥 black background */
+  color: #fff; 
   appearance: none;
   cursor: pointer;
 }
@@ -34,12 +51,12 @@
 .filter-item::after {
   content: "▼";
   position: absolute;
-right: 16px;          /* moved more left */
-  top: 42%;             /* moved slightly up */
+right:60px;          /* moved more left */
+  top: 60%;             /* moved slightly up */
   transform: translateY(-50%);
   font-size: 12px;
   pointer-events: none;
-  color:black;
+  color:white;
 }
 
 /* Divider between dropdowns */
