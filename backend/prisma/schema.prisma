@@ -7,64 +7,91 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum BugSeverity {
+  Blocker
+  Critical
+  Major
+  Minor
+  Trivial
+}
+
+enum BugPriority {
+  P1_Urgent
+  P2_High
+  P3_Medium
+  P4_Low
+}
+
+enum BugStatus {
+  New
+  Open
+  In_Progress
+  Fixed
+  Verified
+  Closed
+  Reopened
+  Wont_Fix
+  Duplicate
+}
+
 model User {
-  id          Int        @id @default(autoincrement())
-  name        String
-  email       String     @unique
-  password    String
-  role        String
-  createdAt   DateTime   @default(now())
-  resetExpiry DateTime?
-  resetToken  String?
-  testCases   TestCase[]
-  versions    TestCaseVersion[] 
-  templates   TestCaseTemplate[]
-  testSuites  TestSuite[]
-  executions  TestExecution[]
-  createdRuns TestRun[] @relation("CreatedRuns")
-  assignments TestRunAssignment[]
-  reportedBugs Bug[] @relation("ReportedBugs")
-  assignedBugs Bug[] @relation("AssignedBugs")
+  id              Int                 @id @default(autoincrement())
+  name            String
+  email           String              @unique
+  password        String
+  role            String
+  createdAt       DateTime            @default(now())
+  resetExpiry     DateTime?
+  resetToken      String?
+  testCases       TestCase[]
+  versions        TestCaseVersion[]
+  templates       TestCaseTemplate[]
+  testSuites      TestSuite[]
+  executions      TestExecution[]
+  createdRuns     TestRun[]           @relation("CreatedRuns")
+  assignments     TestRunAssignment[]
+  reportedBugs    Bug[]               @relation("ReportedBugs")
+  assignedBugs    Bug[]               @relation("AssignedBugs")
   suiteExecutions SuiteExecution[]
 }
 
 model TestCase {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  testCaseId  String   @unique   // Auto ID (TC-2026-0001)
+  testCaseId String @unique // Auto ID (TC-2026-0001)
 
   title       String
   description String
   module      String
-  expected    String   @default("")
+  expected    String @default("")
   priority    String
   severity    String
   type        String
   status      String
 
-  preconditions String
+  preconditions  String
   postconditions String?
-  cleanupSteps  String?
+  cleanupSteps   String?
 
   testData    String
   environment String
 
-  tags        String[] @default([])
+  tags String[] @default([])
 
   estimatedTime String?
 
   automationStatus String
   automationLink   String?
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  isDeleted   Boolean  @default(false)
+  isDeleted Boolean @default(false)
 
-  version     Int      @default(1)
+  version Int @default(1)
 
-  userId      Int
-  user        User     @relation(fields: [userId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 
   updatedById Int?
 
@@ -95,119 +122,123 @@ model TestCaseVersion {
 }
 
 model TestStep {
-  id         Int      @id @default(autoincrement())
+  id         Int @id @default(autoincrement())
   testCaseId Int
 
-  stepNo     Int
-  action     String
-  testData   String?
-  expected   String
-  actual     String?
-  status     String?
-  notes      String?
+  stepNo   Int
+  action   String
+  testData String?
+  expected String
+  actual   String?
+  status   String?
+  notes    String?
 
   executedAt DateTime?
 
-  testCase   TestCase @relation(fields: [testCaseId], references: [id])
+  testCase       TestCase            @relation(fields: [testCaseId], references: [id])
   stepExecutions TestStepExecution[]
 }
+
 model TestCaseTemplate {
-  id          Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
   name        String
   description String?
 
-  module      String?
+  module String?
 
   templateData Json
 
   createdById Int
   createdBy   User @relation(fields: [createdById], references: [id])
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
-model Attachment {
-  id          Int      @id @default(autoincrement())
-  fileName    String
-  filePath    String
-  fileType    String
-  uploadedAt  DateTime @default(now())
 
-  testCaseId  Int
-  testCase    TestCase @relation(fields: [testCaseId], references: [id])
+model Attachment {
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  filePath   String
+  fileType   String
+  uploadedAt DateTime @default(now())
+
+  testCaseId Int
+  testCase   TestCase @relation(fields: [testCaseId], references: [id])
 }
 
 model TestSuite {
-  id            Int      @id @default(autoincrement())
-  name          String
-  description   String?
-  module        String?
-  isArchived    Boolean  @default(false)
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  module      String?
+  isArchived  Boolean @default(false)
 
-  parentId      Int?
-  parent        TestSuite? @relation("SuiteHierarchy", fields: [parentId], references: [id])
-  children      TestSuite[] @relation("SuiteHierarchy")
+  parentId Int?
+  parent   TestSuite?  @relation("SuiteHierarchy", fields: [parentId], references: [id])
+  children TestSuite[] @relation("SuiteHierarchy")
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
-  createdById   Int
-  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
 
-  testCases     SuiteTestCase[]
+  testCases       SuiteTestCase[]
   suiteExecutions SuiteExecution[]
 }
 
 model SuiteTestCase {
-  id         Int      @id @default(autoincrement())
+  id         Int @id @default(autoincrement())
   suiteId    Int
   testCaseId Int
   order      Int
 
-  suite      TestSuite @relation(fields: [suiteId], references: [id])
-  testCase   TestCase  @relation(fields: [testCaseId], references: [id])
+  suite    TestSuite @relation(fields: [suiteId], references: [id])
+  testCase TestCase  @relation(fields: [testCaseId], references: [id])
 
   @@unique([suiteId, testCaseId])
 }
+
 model TestExecution {
-  id            Int       @id @default(autoincrement())
-  testCase      TestCase  @relation(fields: [testCaseId], references: [id])
-  testCaseId    Int
-  tester        User      @relation(fields: [testerId], references: [id])
-  testerId      Int
-  status        String    @default("In Progress")
-  startedAt     DateTime  @default(now())
-  completedAt   DateTime?
-  totalTime     Int?      // store in seconds
-  stepExecutions TestStepExecution[]
-  bugs           Bug[]
-  testRun        TestRun? @relation(fields: [testRunId], references: [id])
-  testRunId      Int?
-  suiteExecution SuiteExecution? @relation(fields: [suiteExecutionId], references: [id])
+  id               Int                 @id @default(autoincrement())
+  testCase         TestCase            @relation(fields: [testCaseId], references: [id])
+  testCaseId       Int
+  tester           User                @relation(fields: [testerId], references: [id])
+  testerId         Int
+  status           String              @default("In Progress")
+  startedAt        DateTime            @default(now())
+  completedAt      DateTime?
+  totalTime        Int? // store in seconds
+  stepExecutions   TestStepExecution[]
+  bugs             Bug[]
+  testRun          TestRun?            @relation(fields: [testRunId], references: [id])
+  testRunId        Int?
+  suiteExecution   SuiteExecution?     @relation(fields: [suiteExecutionId], references: [id])
   suiteExecutionId Int?
 }
 
 model TestStepExecution {
-  id           Int            @id @default(autoincrement())
-  execution    TestExecution  @relation(fields: [executionId], references: [id])
-  executionId  Int
-  testStep     TestStep       @relation(fields: [testStepId], references: [id])
-  testStepId   Int
-  actual       String         @default("")
-  status       String         @default("Pending")
-  notes        String         @default("")
-  evidences    ExecutionEvidence[]
-  bugs           Bug[]
+  id          Int                 @id @default(autoincrement())
+  execution   TestExecution       @relation(fields: [executionId], references: [id])
+  executionId Int
+  testStep    TestStep            @relation(fields: [testStepId], references: [id])
+  testStepId  Int
+  actual      String              @default("")
+  status      String              @default("Pending")
+  notes       String              @default("")
+  evidences   ExecutionEvidence[]
+  bugs        Bug[]
 }
+
 model TestRun {
-  id          Int       @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   name        String
   description String?
   startDate   DateTime
   endDate     DateTime
-  status      String    @default("Planned")
-  createdAt   DateTime  @default(now())
+  status      String   @default("Planned")
+  createdAt   DateTime @default(now())
 
-  createdBy   User      @relation("CreatedRuns", fields: [createdById], references: [id])
+  createdBy   User @relation("CreatedRuns", fields: [createdById], references: [id])
   createdById Int
 
   assignments TestRunAssignment[]
@@ -222,6 +253,7 @@ model TestRunAssignment {
   tester    User    @relation(fields: [testerId], references: [id])
   testerId  Int
 }
+
 model TestRunTestCase {
   id         Int      @id @default(autoincrement())
   testRun    TestRun  @relation(fields: [testRunId], references: [id])
@@ -229,53 +261,85 @@ model TestRunTestCase {
   testCase   TestCase @relation(fields: [testCaseId], references: [id])
   testCaseId Int
 }
+
 model ExecutionEvidence {
-  id              Int      @id @default(autoincrement())
-  fileName        String
-  filePath        String
-  fileType        String
-  fileSize        Int
-  uploadedAt      DateTime @default(now())
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  filePath   String
+  fileType   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
 
   stepExecutionId Int
   stepExecution   TestStepExecution @relation(fields: [stepExecutionId], references: [id], onDelete: Cascade)
 }
+
 model Bug {
-  id              Int       @id @default(autoincrement())
-  title           String
-  description     String
-  status          String    @default("Open")
-  priority        String    @default("Medium")
-  severity        String    @default("Major")
+  id Int @id @default(autoincrement())
 
+  bugId String @unique // e.g. BUG-2026-00001 (generate in backend)
+
+  title       String @db.VarChar(200)
+  description String
+
+  stepsToReproduce String?
+  expected         String?
+  actual           String?
+
+  severity BugSeverity
+  priority BugPriority
+  status   BugStatus   @default(New)
+
+  environment     String?
+  affectedVersion String?
+
+  fixNotes   String?
+  commitLink String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
   testCaseId      Int?
-  testCase        TestCase? @relation(fields: [testCaseId], references: [id])
-
   executionId     Int?
-  execution       TestExecution? @relation(fields: [executionId], references: [id])
+  stepExecutionId Int @unique
 
-  stepExecutionId Int?
-  stepExecution   TestStepExecution? @relation(fields: [stepExecutionId], references: [id])
+  reportedById Int
+  assignedToId Int?
 
-  reportedById    Int
-  reportedBy      User      @relation("ReportedBugs", fields: [reportedById], references: [id])
+  testCase      TestCase?          @relation(fields: [testCaseId], references: [id])
+  execution     TestExecution?     @relation(fields: [executionId], references: [id])
+  stepExecution TestStepExecution? @relation(fields: [stepExecutionId], references: [id])
 
-  assignedToId    Int?
-  assignedTo      User?     @relation("AssignedBugs", fields: [assignedToId], references: [id])
+  reportedBy User  @relation("ReportedBugs", fields: [reportedById], references: [id])
+  assignedTo User? @relation("AssignedBugs", fields: [assignedToId], references: [id])
 
-  createdAt       DateTime  @default(now())
+  attachments BugAttachment[]
 }
+
+model BugAttachment {
+  id         Int      @id @default(autoincrement())
+  fileName   String
+  filePath   String
+  fileType   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
+
+  bugId Int
+  bug   Bug @relation(fields: [bugId], references: [id], onDelete: Cascade)
+}
+
 model SuiteExecution {
-  id          Int      @id @default(autoincrement())
-  suite       TestSuite @relation(fields: [suiteId], references: [id])
-  suiteId     Int
-  executedBy  User     @relation(fields: [executedById], references: [id])
+  id           Int       @id @default(autoincrement())
+  suite        TestSuite @relation(fields: [suiteId], references: [id])
+  suiteId      Int
+  executedBy   User      @relation(fields: [executedById], references: [id])
   executedById Int
 
-  mode        String   // "sequential" or "parallel"
-  startedAt   DateTime @default(now())
+  mode        String // "sequential" or "parallel"
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
-  status      String   @default("In Progress")
+  status      String    @default("In Progress")
 
-  executions  TestExecution[]
+  executions TestExecution[]
 }
