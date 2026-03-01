@@ -19,6 +19,8 @@ export default function Dashboard() {
   const [testCaseTab, setTestCaseTab] = useState("create");
   const [showTestCaseMenu, setShowTestCaseMenu] = useState(false);
   const [selectedSuiteExecutionId, setSelectedSuiteExecutionId] = useState(null);
+  const [showReportsMenu, setShowReportsMenu] = useState(false);
+const [reportTab, setReportTab] = useState("execution");
 
   const navigate = useNavigate();
 
@@ -216,23 +218,77 @@ useEffect(() => {
           </button>
         )}
 
-        {role === "admin" && (
-          <>
-            <button
+           <button
   className="nav-btn"
-  onClick={() => setActiveSection("reports")}
+  onClick={() => {
+    setShowReportsMenu(!showReportsMenu);
+    setTestCaseTab(null);
+  }}
 >
   Reports
 </button>
 
-            <button
-              className="nav-btn"
-              onClick={downloadReport}
-            >
-              Download Report
-            </button>
-          </>
-        )}
+{showReportsMenu && (
+  <div className="sub-menu">
+
+    {/* 1️⃣ Test Execution Report - Tester & Admin */}
+    {(role === "admin" || role === "tester") && (
+     <button
+  className="sub-btn"
+  onClick={() => {
+    setActiveSection("reports");
+    setReportTab("execution");
+  }}
+>
+  Test Execution Report
+</button>
+    )}
+
+    {/* 2️⃣ Bug Report - All Roles */}
+    {(role === "admin" ||
+      role === "tester" ||
+      role === "developer") && (
+      <button
+        className="sub-btn"
+        onClick={() => {
+          setActiveSection("reports");
+          setReportTab("bug");
+        }}
+      >
+        Bug Report
+      </button>
+    )}
+
+    {/* 3️⃣ Developer Performance Report - All Roles */}
+    {(role === "admin" ||
+      role === "tester" ||
+      role === "developer") && (
+      <button
+        className="sub-btn"
+        onClick={() => {
+          setActiveSection("reports");
+          setReportTab("developer");
+        }}
+      >
+        Developer Performance Report
+      </button>
+    )}
+
+    {/* 4️⃣ Tester Performance Report - Tester & Admin */}
+    {(role === "admin" || role === "tester") && (
+      <button
+        className="sub-btn"
+        onClick={() => {
+          setActiveSection("reports");
+          setReportTab("tester");
+        }}
+      >
+        Tester Performance Report
+      </button>
+    )}
+
+  </div>
+)}
 
         <button
           className="nav-btn logout-btn"
@@ -308,7 +364,9 @@ useEffect(() => {
     suiteExecutionId={selectedSuiteExecutionId}
   />
 )}
-{activeSection === "reports" && <Reports />}
+{activeSection === "reports" && (
+  <Reports reportTab={reportTab} />
+)}
 
 </div>
 
