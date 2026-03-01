@@ -149,5 +149,83 @@ console.log("MODULE STATS:", moduleStats);
     }
   }
 );
+/*
+=========================================
+FR-RPT-004: Tester Performance Report
+GET /api/reports/tester-performance
+=========================================
+*/
+
+router.get(
+  "/tester-performance",
+  auth,
+  role(["admin", "tester"]),
+  async (req, res) => {
+    try {
+
+      const testers = await prisma.user.findMany({
+        where: { role: "tester" }
+      });
+
+      const report = await Promise.all(
+        testers.map(async (tester) => {
+
+          // Total executions
+          const executions = await prisma.testExecution.findMany({
+            where: { testerId: tester.id }
+          });
+
+          const totalExecuted = executions.length;
+
+          // Passed executions
+          const passed = executions.filter(
+            (e) => e.status === "Pass"
+          ).length;
+
+          // Unique test cases covered
+          const uniqueCases = new Set(
+            executions.map((e) => e.testCaseId)
+          );
+
+          const coverage = uniqueCases.size;
+
+          // Bugs created (detected)
+          const bugsDetected = await prisma.bug.count({
+  where: { reportedById: tester.id }
+});
+
+          // Detection rate
+          const detectionRate =
+            totalExecuted > 0
+              ? ((bugsDetected / totalExecuted) * 100).toFixed(2)
+              : 0;
+
+          // Execution efficiency
+          const efficiency =
+            totalExecuted > 0
+              ? ((passed / totalExecuted) * 100).toFixed(2)
+              : 0;
+
+          return {
+            tester: tester.name,
+            totalExecuted,
+            bugsDetected,
+            detectionRate,
+            efficiency,
+            coverage
+          };
+        })
+      );
+
+      res.json(report);
+
+    } catch (err) {
+      console.error("TESTER PERFORMANCE ERROR:", err);
+      res.status(500).json({
+        msg: "Failed to generate tester performance report"
+      });
+    }
+  }
+);
 
 module.exports = router;

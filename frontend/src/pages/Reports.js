@@ -8,6 +8,12 @@ export default function Reports({ reportTab }) {
   const [bugReport, setBugReport] = useState(null);
   const [loadingExecution, setLoadingExecution] = useState(false);
 const [loadingBug, setLoadingBug] = useState(false);
+const [devReport, setDevReport] = useState(null);
+const [loadingDev, setLoadingDev] = useState(false);
+const [testerReport, setTesterReport] = useState(null);
+const [loadingTester, setLoadingTester] = useState(false);
+const [showExportMenu, setShowExportMenu] = useState(false);
+const [exporting, setExporting] = useState(false);
 
   const token =
     localStorage.getItem("token") ||
@@ -53,6 +59,82 @@ const fetchBugReport = useCallback(async () => {
   }
 }, [token]);
 
+const fetchDevReport = useCallback(async () => {
+  try {
+    setLoadingDev(true);
+
+    const res = await axios.get(
+      "http://localhost:5000/api/reports/developer-performance",
+      { headers: { "x-auth-token": token } }
+    );
+
+    setDevReport(res.data);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingDev(false);
+  }
+}, [token]);
+
+const fetchTesterReport = useCallback(async () => {
+  try {
+    setLoadingTester(true);
+
+    const res = await axios.get(
+      "http://localhost:5000/api/reports/tester-performance",
+      { headers: { "x-auth-token": token } }
+    );
+
+    setTesterReport(res.data);
+
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoadingTester(false);
+  }
+}, [token]);
+
+const handleExport = async (type) => {
+  try {
+    setExporting(true);
+
+    const endpointMap = {
+      execution: "execution",
+      bug: "bugs",
+      developer: "developer-performance",
+      tester: "tester-performance"
+    };
+
+    const reportType = endpointMap[reportTab];
+
+    const res = await axios.get(
+      `http://localhost:5000/api/export/${reportType}/${type}`,
+      {
+        headers: { "x-auth-token": token },
+        responseType: "blob"
+      }
+    );
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([res.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `${reportType}.${type}`);
+    document.body.appendChild(link);
+    link.click();
+
+    alert("Export successful ✅");
+
+  } catch (err) {
+    console.error(err);
+    alert("Export failed ❌");
+  } finally {
+    setExporting(false);
+    setShowExportMenu(false);
+  }
+};
+
 useEffect(() => {
   if (reportTab === "execution") {
     fetchReport();
@@ -65,12 +147,52 @@ useEffect(() => {
   }
 }, [reportTab, fetchBugReport]);
 
+useEffect(() => {
+  if (reportTab === "developer") {
+    fetchDevReport();
+  }
+}, [reportTab, fetchDevReport]);
+
+useEffect(() => {
+  if (reportTab === "tester") {
+    fetchTesterReport();
+  }
+}, [reportTab, fetchTesterReport]);
 
   return (
     <div className="auth-container">
       <div className="auth-card test-card">
+
+  {reportTab && (
+  <div className="export-container">
+    <button
+      className="export-btn"
+      onClick={() => setShowExportMenu(!showExportMenu)}
+      disabled={exporting}
+    >
+      {exporting ? "Exporting..." : "Export ▾"}
+    </button>
+
+    {showExportMenu && (
+      <div className="export-dropdown">
+        <button onClick={() => handleExport("pdf")}>
+          Export to PDF
+        </button>
+        <button onClick={() => handleExport("xlsx")}>
+          Export to Excel
+        </button>
+        <button onClick={() => handleExport("csv")}>
+          Export to CSV
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
     {reportTab === "execution" && (
   <>
+
+
     <h2>Test Execution Report</h2>
 
     {loadingExecution && <p>Loading report...</p>}
@@ -216,6 +338,8 @@ useEffect(() => {
 )}
 {reportTab === "bug" && (
   <>
+
+
     <h2>Bug Report</h2>
   {loadingBug && <p>Loading bug report...</p>}
 
@@ -316,6 +440,76 @@ useEffect(() => {
     )}
   </>
 )}
+{reportTab === "developer" && (
+  <>
+  
+    <h2>Developer Performance Report</h2>
+
+    {loadingDev && <p>Loading...</p>}
+
+    {!loadingDev && Array.isArray(devReport) && (
+      <table className="report-table">
+        <thead>
+          <tr>
+            <th>Developer</th>
+            <th>Assigned</th>
+            <th>Resolved</th>
+            <th>Avg Resolution (Days)</th>
+            <th>Reopen %</th>
+            <th>Fix Quality %</th>
+          </tr>
+        </thead>
+        <tbody>
+          {devReport.map((dev, i) => (
+            <tr key={i}>
+              <td>{dev.developer}</td>
+              <td>{dev.assigned}</td>
+              <td>{dev.resolved}</td>
+              <td>{dev.avgResolutionDays}</td>
+              <td>{dev.reopenRate}%</td>
+              <td>{dev.fixQuality}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </>
+)}
+{reportTab === "tester" && (
+  <>
+    <h2>Tester Performance Report</h2>
+
+    {loadingTester && <p>Loading...</p>}
+
+    {!loadingTester && Array.isArray(testerReport) && (
+      <table className="report-table">
+        <thead>
+          <tr>
+            <th>Tester</th>
+            <th>Total Executed</th>
+            <th>Bugs Detected</th>
+            <th>Detection Rate %</th>
+            <th>Execution Efficiency %</th>
+            <th>Coverage</th>
+          </tr>
+        </thead>
+        <tbody>
+          {testerReport.map((t, i) => (
+            <tr key={i}>
+              <td>{t.tester}</td>
+              <td>{t.totalExecuted}</td>
+              <td>{t.bugsDetected}</td>
+              <td>{t.detectionRate}%</td>
+              <td>{t.efficiency}%</td>
+              <td>{t.coverage}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+  </>
+)}
+
       </div>
     </div>
   );

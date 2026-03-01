@@ -138,5 +138,94 @@ router.get(
     }
   }
 );
+/*
+=========================================
+FR-RPT-003: Developer Performance Report
+GET /api/reports/developer-performance
+=========================================
+*/
+
+router.get(
+  "/developer-performance",
+  auth,
+  role(["admin", "tester", "developer"]),
+  async (req, res) => {
+    try {
+
+      const developers = await prisma.user.findMany({
+        where: { role: "developer" }
+      });
+
+      const report = await Promise.all(
+        developers.map(async (dev) => {
+
+          // Assigned bugs
+          const assigned = await prisma.bug.count({
+            where: { assignedToId: dev.id }
+          });
+
+          // Closed bugs
+          const resolvedBugs = await prisma.bug.findMany({
+            where: {
+              assignedToId: dev.id,
+              status: "Closed"
+            }
+          });
+
+          const resolved = resolvedBugs.length;
+
+          // Average resolution time
+          let avgResolutionDays = 0;
+
+          if (resolved > 0) {
+            const totalDays = resolvedBugs.reduce((sum, bug) => {
+              const days = Math.floor(
+                (new Date(bug.updatedAt) - new Date(bug.createdAt)) /
+                (1000 * 60 * 60 * 24)
+              );
+              return sum + days;
+            }, 0);
+
+            avgResolutionDays = (totalDays / resolved).toFixed(2);
+          }
+
+          // Reopened bugs
+          const reopened = await prisma.bug.count({
+            where: {
+              assignedToId: dev.id,
+              status: "Reopened"
+            }
+          });
+
+          const reopenRate =
+            assigned > 0
+              ? ((reopened / assigned) * 100).toFixed(2)
+              : 0;
+
+          // Fix quality %
+          const fixQuality =
+            assigned > 0
+              ? ((resolved / assigned) * 100).toFixed(2)
+              : 0;
+
+          return {
+            developer: dev.name,
+            assigned,
+            resolved,
+            avgResolutionDays,
+            reopenRate,
+            fixQuality
+          };
+        })
+      );
+
+      res.json(report);
+
+    } catch (err) {
+      console.error("DEV PERFORMANCE ERROR:", err);
+      res.status(500).json({ msg: "Failed to generate developer performance report" });
+    }
+  }
+);
 
 module.exports = router;
