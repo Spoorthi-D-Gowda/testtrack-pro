@@ -16,7 +16,7 @@ GET /api/reports/execution
 router.get(
   "/execution",
   auth,
-  role(["admin"]),
+  role(["admin", "tester"]),
   async (req, res) => {
     try {
 
