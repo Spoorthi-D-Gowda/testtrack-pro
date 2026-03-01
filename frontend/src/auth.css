@@ -1,3 +1,43 @@
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+}
+
+.summary-card {
+  background: #919aa9;
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.summary-card h4 {
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.summary-card p {
+  font-size: 22px;
+  font-weight: bold;
+}
+
+.pass { border-left: 4px solid #22c55e; }
+.fail { border-left: 4px solid #ef4444; }
+.blocked { border-left: 4px solid #f59e0b; }
+.rate { border-left: 4px solid #3b82f6; }
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.report-table th,
+.report-table td {
+  padding: 10px;
+  border-bottom: 1px solid #334155;
+  text-align: left;
+}
 /* ==== SINGLE FILTER BOX ==== */
 /* ===== ONLY FILTER DROPDOWNS ===== */
 

@@ -9,6 +9,7 @@ import Bugs from "./Bugs";
 import ExecutionHistory from "./ExecutionHistory";
 import ExecutionCompare from "./ExecutionCompare";
 import SuiteExecution from "./SuiteExecution";
+import Reports from "./Reports";
 import { useLocation } from "react-router-dom";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -218,11 +219,11 @@ useEffect(() => {
         {role === "admin" && (
           <>
             <button
-              className="nav-btn"
-              onClick={() => navigate("/analytics")}
-            >
-              View Analytics
-            </button>
+  className="nav-btn"
+  onClick={() => setActiveSection("reports")}
+>
+  Reports
+</button>
 
             <button
               className="nav-btn"
@@ -307,6 +308,8 @@ useEffect(() => {
     suiteExecutionId={selectedSuiteExecutionId}
   />
 )}
+{activeSection === "reports" && <Reports />}
+
 </div>
 
     </div>

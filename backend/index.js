@@ -15,6 +15,7 @@ const exportRoutes = require("./routes/export");
 const suiteRoutes = require("./routes/suite");
 const executionRoutes = require("./routes/execution");
 const testRunRoutes = require("./routes/testrun");
+const reportRoutes = require("./routes/reports");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -37,6 +38,8 @@ app.use("/api/executions", executionRoutes);
 app.use("/api/testruns", testRunRoutes);
 
 app.use("/api/auth", authRoutes);
+app.use("/api/reports", reportRoutes);
+
 app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");
 });

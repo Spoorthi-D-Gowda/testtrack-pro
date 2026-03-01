@@ -5,6 +5,8 @@ import "../auth.css";
 
 export default function ExecuteTestCase() {
   const { testCaseId } = useParams();
+const id = testCaseId;
+ 
   const navigate = useNavigate();
 
   const [executionId, setExecutionId] = useState(null);
@@ -19,7 +21,8 @@ const queryParams = new URLSearchParams(location.search);
 const runId = queryParams.get("runId");
 const suiteExecutionId = queryParams.get("suiteExecutionId");
 const sequence = Number(queryParams.get("sequence") || 0);
-
+ console.log("Route ID:", id);
+console.log("SuiteExecutionId:", suiteExecutionId);
 
   const token =
     localStorage.getItem("token") ||
@@ -49,8 +52,9 @@ const formatTime = (totalSeconds) => {
   // ================= START EXECUTION =================
 const startExecution = useCallback(async () => {
   try {
+
     const res = await axios.post(
-      `http://localhost:5000/api/executions/start/${testCaseId}`,
+      `http://localhost:5000/api/executions/start/${id}`,
       {},
       {
         headers: { "x-auth-token": token },
@@ -61,9 +65,10 @@ const startExecution = useCallback(async () => {
     setExecutionId(res.data.executionId);
 
   } catch (err) {
-    alert("Failed to start execution");
+    console.error("START ERROR:", err.response?.data);
+    alert(err.response?.data?.msg || "Failed to start execution");
   }
-}, [testCaseId, token, runId]);
+}, [id, token, runId]);
 
   // ================= FETCH EXECUTION =================
 const fetchExecution = useCallback(async (id) => {
@@ -152,7 +157,7 @@ if (suiteExecutionId) {
       const next = sortedExecutions[sequence + 1];
 
       window.location.href =
-        `/execute/${next.testCaseId}` +
+        `/execute/${next.id}` +
         `?suiteExecutionId=${suiteExecutionId}` +
         `&sequence=${sequence + 1}`;
 
@@ -187,8 +192,33 @@ if (suiteRes.data.mode === "parallel") {
   }
 };
 useEffect(() => {
+
+  // 🟣 CASE 1: Coming from Suite (already have execution)
+  if (suiteExecutionId) {
+
+    const execId = Number(id);
+
+    if (!execId || isNaN(execId)) {
+      alert("Invalid execution ID");
+      return;
+    }
+
+    setExecutionId(execId);
+    fetchExecution(execId);
+    return;
+  }
+
+  // 🔵 CASE 2: Normal execution from test case
+  const testCaseId = Number(id);
+
+  if (!testCaseId || isNaN(testCaseId)) {
+    alert("Invalid Test Case ID");
+    return;
+  }
+
   startExecution();
-}, [startExecution]);
+
+}, [id, suiteExecutionId]);
 
 useEffect(() => {
   if (executionId) {
@@ -230,6 +260,7 @@ useEffect(() => {
     alert(err.response?.data?.msg || "Upload failed");
   }
 };
+
 const quickFail = async (stepExecutionId) => {
   try {
     const res = await axios.post(

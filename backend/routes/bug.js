@@ -48,17 +48,21 @@ router.post(
 }
 
       // Prevent duplicate bug for same failed step
-      const existingBug = await prisma.bug.findFirst({
+     const existingBug = await prisma.bug.findFirst({
   where: {
-    stepExecutionId: stepExecutionId
-  },
+    stepExecutionId,
+    executionId: stepExecution.executionId,
+    status: {
+      notIn: ["Closed", "Duplicate", "Wont_Fix"]
+    }
+  }
 });
 
-      if (existingBug) {
-        return res.status(400).json({
-          msg: "Bug already created for this step",
-        });
-      }
+if (existingBug) {
+  return res.status(400).json({
+    msg: "Active bug already exists for this step"
+  });
+}
 
 const testCasePriority = stepExecution.execution.testCase.priority;
 
@@ -163,13 +167,9 @@ router.get(
 
       let whereCondition = {};
 
-      if (req.user.role === "tester") {
-        whereCondition.reportedById = req.user.id;
-      }
-
-      if (req.user.role === "developer") {
-        whereCondition.assignedToId = req.user.id;
-      }
+if (req.user.role === "developer") {
+  whereCondition.assignedToId = req.user.id;
+}
 
       // 🔥 Filtering
       if (priority) whereCondition.priority = priority;

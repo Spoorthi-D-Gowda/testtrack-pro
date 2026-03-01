@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
   "/complete/:executionId",
   auth,
-  role(["tester"]),
+  role(["tester", "admin"]),
   async (req, res) => {
     try {
       const executionId = Number(req.params.executionId);

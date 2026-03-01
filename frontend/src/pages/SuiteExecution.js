@@ -44,7 +44,7 @@ useEffect(() => {
               className="primary-btn"
               onClick={() =>
                 window.location.href =
-                  `/execute/${exec.testCaseId}` +
+                  `/execute/${exec.id}` +
                   `?suiteExecutionId=${suiteExecutionId}` +
                   `&sequence=${index}`
               }

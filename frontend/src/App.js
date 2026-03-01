@@ -1,7 +1,7 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import Bugs from "./pages/Bugs";
-import Analytics from "./pages/Analytics";
-
+import Reports from "./pages/Reports";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -62,10 +62,10 @@ function App() {
   }
 />
 <Route
-  path="/analytics"
+  path="/reports"
   element={
     <PrivateRoute>
-      <Analytics />
+      <Reports />
     </PrivateRoute>
   }
 />

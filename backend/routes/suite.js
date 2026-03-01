@@ -268,11 +268,14 @@ router.post(
         });
 
         await prisma.testStepExecution.createMany({
-          data: steps.map((step) => ({
-            executionId: execution.id,
-            testStepId: step.id,
-          })),
-        });
+  data: steps.map((step) => ({
+    executionId: execution.id,
+    testStepId: step.id,
+    status: "Pending",
+    actual: "",
+    notes: "",
+  })),
+});
       }
 
       res.json({
