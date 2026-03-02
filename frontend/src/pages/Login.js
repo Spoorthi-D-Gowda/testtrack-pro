@@ -1,5 +1,5 @@
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import { useLocation } from "react-router-dom";
 
 import { useState, useEffect } from "react";
 
@@ -19,6 +19,25 @@ const [remember, setRemember] = useState(false);
   const [success, setSuccess] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const verified = params.get("verified");
+
+  if (verified === "success") {
+    setSuccess("Email verified successfully! Please login.");
+  }
+
+  if (verified === "already") {
+    setSuccess("Email already verified. Please login.");
+  }
+
+  if (verified === "expired") {
+    setError("Verification link expired. Please register again.");
+  }
+
+}, [location]);
 
   useEffect(() => {
   const token =

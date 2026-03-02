@@ -20,15 +20,20 @@ export default function Register() {
   const navigate = useNavigate();
 
   // Check password strength
-  const checkPassword = (value) => {
-    setPassword(value);
+const strongPassword =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
-    if (value.length < 6) {
-      setPasswordMsg("Use strong password (min 6 characters) ");
-    } else {
-      setPasswordMsg("");
-    }
-  };
+const checkPassword = (value) => {
+  setPassword(value);
+
+  if (!strongPassword.test(value)) {
+    setPasswordMsg(
+      "Password must be 8 characters and include uppercase, lowercase, number & special character"
+    );
+  } else {
+    setPasswordMsg("");
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -47,11 +52,7 @@ export default function Register() {
         { name, email, password, role }
       );
 
-      setSuccess("Registration successful! Redirecting to login...");
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1500);
+      setSuccess("Registration successful! Please check your email to verify.");
 
     } catch (err) {
       if (err.response) {
