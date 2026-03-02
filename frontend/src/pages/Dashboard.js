@@ -11,9 +11,12 @@ import ExecutionCompare from "./ExecutionCompare";
 import SuiteExecution from "./SuiteExecution";
 import Reports from "./Reports";
 import { useLocation } from "react-router-dom";
+import GridLayout from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
- ;
+ const [stats, setStats] = useState(null);
   const [activeSection, setActiveSection] = useState("dashboard");
   const [selectedCompareId, setSelectedCompareId] = useState(null);
   const [testCaseTab, setTestCaseTab] = useState("create");
@@ -83,6 +86,19 @@ useEffect(() => {
     });
 
 }, [navigate, logout]);
+
+useEffect(() => {
+  const token =
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
+
+  axios
+    .get("http://localhost:5000/api/dashboard/stats", {
+      headers: { "x-auth-token": token }
+    })
+    .then(res => setStats(res.data))
+    .catch(err => console.error(err));
+}, []);
 
   return (
     <div className="dashboard-wrapper">
@@ -217,7 +233,7 @@ useEffect(() => {
             My Assigned Bugs
           </button>
         )}
-
+    {(role === "admin" || role === "tester") && (
            <button
   className="nav-btn"
   onClick={() => {
@@ -227,6 +243,7 @@ useEffect(() => {
 >
   Reports
 </button>
+   )}
 
 {showReportsMenu && (
   <div className="sub-menu">
@@ -246,8 +263,7 @@ useEffect(() => {
 
     {/* 2️⃣ Bug Report - All Roles */}
     {(role === "admin" ||
-      role === "tester" ||
-      role === "developer") && (
+      role === "tester") && (
       <button
         className="sub-btn"
         onClick={() => {
@@ -261,8 +277,7 @@ useEffect(() => {
 
     {/* 3️⃣ Developer Performance Report - All Roles */}
     {(role === "admin" ||
-      role === "tester" ||
-      role === "developer") && (
+      role === "tester") && (
       <button
         className="sub-btn"
         onClick={() => {
@@ -309,17 +324,227 @@ useEffect(() => {
     ) : (
       <>
         {/* USER INFO */}
-        <div className="user-info">
-          <h2>Welcome back,</h2>
-          <h1>{user.email}</h1>
-          <p className="role-text">{user.role}</p>
-        </div>
+        <div className="welcome-card">
+  <div>
+    <h2 className="welcome-title">Welcome back,</h2>
+    <h1 className="welcome-name">{user.name || user.email}</h1>
+    <p className="welcome-role">{user.role}</p>
+  </div>
+</div>
 
-        {/* ANALYTICS */}
-        <div className="analytics-section">
-          <h2>Analytics Overview</h2>
-        
+{role === "developer" && stats?.devStats && (
+  <>
+    {/* ===== ROW 1 - BUG COUNTERS ===== */}
+    <div className="dashboard-top-cards">
+
+      <div className="dash-card green">
+        <p className="card-label">Bugs Assigned</p>
+        <h2>{stats.devStats.bugsAssigned}</h2>
+      </div>
+
+      <div className="dash-card green">
+        <p className="card-label">Bugs Resolved</p>
+        <h2>{stats.devStats.bugsResolved}</h2>
+      </div>
+
+      <div className="dash-card green">
+        <p className="card-label">Reopened Bugs</p>
+        <h2>{stats.devStats.reopenedBugs}</h2>
+      </div>
+
+    </div>
+
+    {/* ===== ROW 2 ===== */}
+    <div className="middle-section">
+
+      {/* Bug Severity */}
+      <div className="widget-cards large">
+        <h3>Bug Severity</h3>
+        <div className="analytics-bars">
+          {stats.devStats.severityStats.map((s, i) => (
+            <div key={i} className="bar">
+              <div
+                className="bar-fill"
+                style={{ height: `${s._count.severity * 20}px` }}
+              />
+              <span>{s.severity}</span>
+            </div>
+          ))}
         </div>
+      </div>
+
+      {/* Bug Priority */}
+      <div className="widget-cards large">
+        <h3>Bug Priority</h3>
+        <div className="analytics-bars">
+          {stats.devStats.priorityStats.map((p, i) => (
+            <div key={i} className="bar">
+              <div
+                className="bar-fill"
+                style={{ height: `${p._count.priority * 20}px` }}
+              />
+              <span>{p.priority}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+
+    {/* ===== ROW 3 - Assigned Test Cases ===== */}
+    <div className="assigned-section">
+      <div className="assigned-header">
+        Assigned Test Cases
+      </div>
+
+      {stats.devStats.assignedTestCases.map(tc => (
+        <div key={tc.id} className="assigned-item">
+          <div className="assigned-title">{tc.title}</div>
+          <div className="assigned-by">
+            Assigned by: {tc.user?.name}
+          </div>
+        </div>
+      ))}
+    </div>
+  </>
+)}
+{(role === "tester" || role === "admin") && (
+      
+        <div className="analytics-section">
+
+  {/* TOP HEADER */}
+  <div className="dashboard-header">
+    <h2>Dashboard</h2>
+
+    {(role === "tester" || role === "admin") && (
+      <button
+        className="add-btn"
+        onClick={() => {
+          setActiveSection("testcases");
+          setTestCaseTab("create");
+        }}
+      >
+        + Add Test Case
+      </button>
+    )}
+  </div>
+
+  {stats && (
+    <>
+      {/* ===== TOP COUNTERS ===== */}
+<div className="dashboard-top-cards">
+
+  <div className="dash-card green">
+    <div>
+      <p className="card-label">Total Test Cases</p>
+      <h2>{stats.totalTestCases}</h2>
+    </div>
+  </div>
+
+  <div className="dash-card green">
+    <p className="card-label">Total Bugs</p>
+    <h2>{stats.totalBugs}</h2>
+  </div>
+
+  <div className="dash-card green">
+    <p className="card-label">Passed</p>
+    <h2>{stats.passedTestCases}</h2>
+  </div>
+
+  <div className="dash-card green">
+    <p className="card-label">Failed</p>
+    <h2>{stats.failedTestCases}</h2>
+  </div>
+
+</div>
+
+      {/* ===== ANALYSIS + USERS ===== */}
+      <div className="middle-section">
+
+        {/* Project Analysis */}
+        <div className="widget-card large">
+  <h3>Project Analytics</h3>
+
+  <div className="analytics-bars">
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.passedTestCases * 5}px` }}
+      />
+      <span>Passed</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.failedTestCases * 5}px` }}
+      />
+      <span>Failed</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.blockedTestCases * 5}px` }}
+      />
+      <span>Blocked</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.skippedTestCases * 5}px` }}
+      />
+      <span>Skipped</span>
+    </div>
+  </div>
+</div>
+       {/* Testers */}
+<div className="widget-card">
+  <h3>Testers</h3>
+  <ul className="team-list">
+    {stats.testers.map((t) => (
+      <li key={t.id} className="team-item">
+        <div className="team-name">{t.name}</div>
+        <div className="team-email">{t.email}</div>
+      </li>
+    ))}
+  </ul>
+</div>
+        {/* Developers */}
+<div className="widget-card">
+  <h3>Developers</h3>
+  <ul className="team-list">
+    {stats.developers.map((d) => (
+      <li key={d.id} className="team-item">
+        <div className="team-name">{d.name}</div>
+        <div className="team-email">{d.email}</div>
+      </li>
+    ))}
+  </ul>
+</div>
+
+{/* Admins - Only visible to admin dashboard */}
+{role === "admin" && (
+  <div className="widget-card">
+    <h3>Admins</h3>
+    <ul className="team-list">
+      {stats.admins?.map(a => (
+        <li key={a.id} className="team-item">
+          <div className="team-name">{a.name}</div>
+          <div className="team-email">{a.email}</div>
+        </li>
+      ))}
+    </ul>
+  </div> 
+)}
+
+     </div>
+      </>
+    )}
+
+  </div>
+)}
 
       
       </>

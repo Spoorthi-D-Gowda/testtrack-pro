@@ -1,3 +1,537 @@
+/* Box around Recent Failed Test Cases */
+.report-section-box {
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 25px;
+  margin-top: 30px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+}
+
+/* Heading inside box */
+.report-section-box h3 {
+  margin-bottom: 20px;
+  font-weight: 600;
+  font-size: 18px;
+  color: #111827;
+}
+
+/* Optional: nicer table inside box */
+.report-section-box .report-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.report-section-box .report-table th {
+  text-align: left;
+  padding: 12px 0;
+  font-weight: 600;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.report-section-box .report-table td {
+  padding: 12px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* Red fail text */
+.fail-text {
+  color: #ef4444;
+  font-weight: 600;
+}
+/* Grid Layout */
+.column-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  margin-top: 15px;
+}
+
+/* Individual Column Card */
+.column-card {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border: 1px solid #e5e7eb;
+  transition: 0.3s ease;
+}
+
+.column-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+}
+
+.column-card h4 {
+  font-size: 16px;
+  margin-bottom: 10px;
+  color: #374151;
+}
+
+
+/* ===== Report Box Style ===== */
+.report-box {
+  background:transparent;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+.report-box h3 {
+  margin-bottom: 15px;
+  font-weight: 600;
+ 
+  padding-left: 10px;
+}
+
+/* Row styling */
+.report-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.report-row:last-child {
+  border-bottom: none;
+}
+
+.report-row span {
+  font-size: 15px;
+}
+
+
+/* Light green cards same style */
+.dash-card.green {
+  background: #d9efe4;
+  border-radius: 20px;
+  padding: 25px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+
+/* Assigned section */
+.assigned-section {
+  margin-top: 30px;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  overflow: hidden;
+}
+
+.assigned-header {
+  background: #dbeafe;   /* Light blue */
+  padding: 18px 25px;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.assigned-item {
+  padding: 18px 25px;
+  border-bottom: 1px solid #f1f1f1;
+}
+
+.assigned-title {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.assigned-by {
+  font-size: 13px;
+  color: #6b7280;
+}
+/* ===== Custom Scrollbar For Main Content ===== */
+
+.main-content::-webkit-scrollbar {
+  width: 10px;   /* Same thickness */
+}
+
+.main-content::-webkit-scrollbar-track {
+  background: #e5e7eb;  /* Same track color */
+  border-radius: 10px;
+}
+
+.main-content::-webkit-scrollbar-thumb {
+  background: rgb(69, 67, 67);  /* Same thumb color */
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+}
+
+.main-content::-webkit-scrollbar-thumb:hover {
+  background: rgb(30, 30, 30);
+}
+/* ===== Custom Blue Scrollbar For Sidebar ===== */
+
+.sidebar::-webkit-scrollbar {
+  width: 10px;   /* Thickness */
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: #e5e7eb;  /* Light gray background */
+  border-radius: 10px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background:rgb(69, 67, 67); /* Blue gradient */
+  border-radius: 10px;
+  border: 2px solid #e5e7eb;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background:rgb(30, 30, 30);
+}
+
+/* ===== Welcome Card ===== */
+
+.welcome-card {
+  background: #ffffff;
+  padding: 25px 30px;
+  border-radius: 18px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  margin-bottom: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.welcome-title {
+  font-size: 18px;
+  color:black;
+  font-weight: 500;
+  margin: 0;
+}
+
+.welcome-name {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 5px 0;
+  color: #111827;
+}
+
+.welcome-role {
+  font-size: 14px;
+  color: #9ca3af;
+  text-transform: capitalize;
+}
+.team-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+}
+
+.team-item {
+  margin-bottom: 15px;
+}
+
+.team-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: #ffffff;
+}
+
+.team-email {
+  font-size: 13px;
+  color: #9ca3af;
+}
+.team-card {
+  background: #0f0f0f;
+  color: white;
+  padding: 25px;
+  border-radius: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+}
+
+.team-member {
+  margin-bottom: 15px;
+}
+
+.team-member p {
+  font-size: 13px;
+  color: #9ca3af;
+}
+.progress-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.progress-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.progress-circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #22c55e calc(var(--progress) * 1%),
+    #e5e7eb 0
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-circle span {
+  font-size: 28px;
+  font-weight: bold;
+}
+.analytics-card {
+  background: #0f0f0f;
+  color: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.3);
+}
+
+.analytics-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 25px;
+  height: 150px;
+  margin-top: 20px;
+}
+
+.bar {
+  width: 30px;
+  border-radius: 10px;
+}
+
+.bar.passed {
+  background: #22c55e;
+}
+
+.bar.failed {
+  background: #ef4444;
+}
+
+.bar.blocked {
+  background: #f59e0b;
+}
+
+.bar.skipped {
+  background: #94a3b8;
+}
+
+.bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.dashboard-top-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.dash-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transition: 0.3s ease;
+}
+
+.dash-card.green {
+  background: #eafaf1;
+}
+
+.card-label {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 10px;
+}
+
+.dash-card h2 {
+  font-size: 28px;
+  color: #1f2937;
+}
+.progress-card-modern {
+  background: white;
+  padding: 20px;
+  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+  margin-top: 30px;
+  text-align: center;
+}
+
+.circle-wrapper {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.circle {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #1f7a4d calc(var(--progress) * 1%),
+    #e5e7eb 0
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.circle::before {
+  content: "";
+  width: 120px;
+  height: 120px;
+  background: white;
+  border-radius: 50%;
+  position: absolute;
+}
+
+.circle span {
+  position: relative;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1f7a4d;
+}
+.analytics-bars {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  height: 150px;
+  margin-top: 20px;
+}
+
+.bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bar-fill {
+  width: 25px;
+  background: #1f7a4d;
+  border-radius: 10px;
+}
+
+.bar span {
+  margin-top: 8px;
+  font-size: 12px;
+}
+/* Dashboard Main Area */
+.analytics-section {
+  background: #f4f7f6;
+  padding: 25px;
+  border-radius: 20px;
+}
+
+/* Header */
+.dashboard-header h2 {
+  font-weight: 700;
+  font-size: 28px;
+  color: #1e293b;
+}
+
+/* Add Button */
+.add-btn {
+  background: #1f7a4d;
+  color: white;
+  padding: 10px 18px;
+  border-radius: 25px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+.add-btn:hover {
+  background: #166534;
+}
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.add-btn {
+  background: linear-gradient(90deg, #2563eb, #06b6d4);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.top-cards {
+  display: flex;
+  gap: 20px;
+  margin: 25px 0;
+}
+
+.dash-card {
+  flex: 1;
+  padding: 20px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.05);
+  text-align: left;
+}
+
+.dash-card h4 {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.dash-card h2 {
+  font-size: 28px;
+  font-weight: bold;
+  color: #1f7a4d;
+}
+.middle-section {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.widget-cards {
+  flex: 1;
+  background:rgb(234, 217, 217);
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.widget-card.large {
+  flex: 1;
+}
+
+
+
+.progress-bar {
+  background: #e5e7eb;
+  border-radius: 20px;
+  height: 25px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #2563eb, #06b6d4);
+  height: 100%;
+  color: white;
+  text-align: center;
+  line-height: 25px;
+  font-weight: bold;
+}
+.widget-card {
+  background: #111;
+  padding: 20px;
+  border-radius: 18px;
+  color: white;
+  height: 100%;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
 .export-container {
   position: relative;
   display: flex;
@@ -53,7 +587,7 @@
 }
 
 .summary-card {
-  background: #919aa9;
+  background: #d5f0e3;
   padding: 15px;
   border-radius: 10px;
   text-align: center;
@@ -68,11 +602,6 @@
   font-size: 22px;
   font-weight: bold;
 }
-
-.pass { border-left: 4px solid #22c55e; }
-.fail { border-left: 4px solid #ef4444; }
-.blocked { border-left: 4px solid #f59e0b; }
-.rate { border-left: 4px solid #3b82f6; }
 
 .report-table {
   width: 100%;
@@ -1074,6 +1603,8 @@ right:60px;          /* moved more left */
 .sidebar {
   width: 15%;
   background: white;
+   height: 100vh;
+  overflow-y: auto;
   color: black;
   padding: 30px 20px;
   display: flex;
@@ -1191,7 +1722,7 @@ right:60px;          /* moved more left */
   color: #1e293b;
   margin-top: 25px;
   margin-bottom: 15px;
-  border-left: 4px solid #2563eb;
+ 
   padding-left: 10px;
 }
 
