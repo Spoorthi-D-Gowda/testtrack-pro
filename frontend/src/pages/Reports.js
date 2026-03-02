@@ -233,6 +233,7 @@ useEffect(() => {
         </div>
 
         {/* ===== Failed Test Cases ===== */}
+    <div className="report-section-box">
         <h3 style={{ marginTop: "30px" }}>
           Recent Failed Test Cases
         </h3>
@@ -263,8 +264,10 @@ useEffect(() => {
             )}
           </tbody>
         </table>
+    </div>
 
         {/* ===== Execution By Tester ===== */}
+    <div className="report-section-box">
         <h3 style={{ marginTop: "30px" }}>
           Execution By Tester
         </h3>
@@ -286,8 +289,9 @@ useEffect(() => {
               ))}
           </tbody>
         </table>
-
+    </div>
         {/* ===== Execution By Module ===== */}
+    <div className="report-section-box">
         <h3 style={{ marginTop: "30px" }}>
           Execution By Module
         </h3>
@@ -309,8 +313,10 @@ useEffect(() => {
               ))}
           </tbody>
         </table>
+        </div>
 
         {/* ===== Execution Timeline ===== */}
+  <div className="report-section-box">
         <h3 style={{ marginTop: "30px" }}>
           Execution Timeline
         </h3>
@@ -332,6 +338,7 @@ useEffect(() => {
               ))}
           </tbody>
         </table>
+        </div>
       </>
     )}
   </>
@@ -358,91 +365,93 @@ useEffect(() => {
       </div>
     </div>
 
-    {/* Status */}
-    <h3>Bug By Status</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.byStatus.map((b, i) => (
-          <tr key={i}>
-            <td>{b.status}</td>
-            <td>{b._count.status}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG BY STATUS ================= */}
+<div className="report-box">
+  <h3>Bug By Status</h3>
+  <div className="report-box-body">
+    {bugReport.byStatus.map((b, i) => (
+      <div key={i} className="report-row">
+        <span>{b.status}</span>
+        <span className="count">{b._count.status}</span>
+      </div>
+    ))}
+  </div>
+</div>
 
-    {/* Severity */}
-    <h3>Bug By Severity</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.bySeverity.map((b, i) => (
-          <tr key={i}>
-            <td>{b.severity}</td>
-            <td>{b._count.severity}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG BY SEVERITY ================= */}
+<div className="report-box">
+  <h3>Bug By Severity</h3>
+  <div className="report-box-body">
+    {bugReport.bySeverity.map((b, i) => (
+      <div key={i} className="report-row">
+        <span>{b.severity}</span>
+        <span className="count">{b._count.severity}</span>
+      </div>
+    ))}
+  </div>
+</div>
 
-    {/* Priority */}
-    <h3>Bug By Priority</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.byPriority.map((b, i) => (
-          <tr key={i}>
-            <td>{b.priority}</td>
-            <td>{b._count.priority}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG BY PRIORITY ================= */}
+<div className="report-box">
+  <h3>Bug By Priority</h3>
+  <div className="report-box-body">
+    {bugReport.byPriority.map((b, i) => (
+      <div key={i} className="report-row">
+        <span>{b.priority}</span>
+        <span className="count">{b._count.priority}</span>
+      </div>
+    ))}
+  </div>
+</div>
 
-    {/* Developer */}
-    <h3>Bug By Developer</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.byDeveloper.map((d, i) => (
-          <tr key={i}>
-            <td>{d.developer}</td>
-            <td>{d.count}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG BY DEVELOPER ================= */}
+<div className="report-box">
+  <h3>Bug By Developer</h3>
+  <div className="report-box-body">
+    {bugReport.byDeveloper.map((d, i) => (
+      <div key={i} className="report-row">
+        <span>{d.developer}</span>
+        <span className="count">{d.count}</span>
+      </div>
+    ))}
+  </div>
+</div>
 
-    {/* Aging */}
-    <h3>Bug Aging (Days Open)</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.aging.map((a, i) => (
-          <tr key={i}>
-            <td>{a.bugId}</td>
-            <td>{a.title}</td>
-            <td>{a.daysOpen} days</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG AGING ================= */}
+<div className="report-box">
+  <h3>Bug Aging (Days Open)</h3>
+  <div className="report-box-body">
+    {bugReport.aging.map((a, i) => (
+      <div key={i} className="report-row">
+        <span>
+          #{a.bugId} - {a.title}
+        </span>
+        <span className="count">{a.daysOpen} days</span>
+      </div>
+    ))}
+  </div>
+</div>
 
-    {/* Trend */}
-    <h3>Bug Trend Over Time</h3>
-    <table className="report-table">
-      <tbody>
-        {bugReport.trend.map((t, i) => (
-          <tr key={i}>
-            <td>{t.date}</td>
-            <td>{t.count}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+{/* ================= BUG TREND ================= */}
+<div className="report-box">
+  <h3>Bug Trend Over Time</h3>
+  <div className="report-box-body">
+    {bugReport.trend.map((t, i) => (
+      <div key={i} className="report-row">
+        <span>{t.date}</span>
+        <span className="count">{t.count}</span>
+      </div>
+    ))}
+  </div>
+</div>
+
  </>
     )}
   </>
 )}
 {reportTab === "developer" && (
   <>
-  
+  <div className="report-section-box">
     <h2>Developer Performance Report</h2>
 
     {loadingDev && <p>Loading...</p>}
@@ -473,10 +482,13 @@ useEffect(() => {
         </tbody>
       </table>
     )}
+  </div>
   </>
 )}
+
 {reportTab === "tester" && (
   <>
+  <div className="report-section-box">
     <h2>Tester Performance Report</h2>
 
     {loadingTester && <p>Loading...</p>}
@@ -507,6 +519,7 @@ useEffect(() => {
         </tbody>
       </table>
     )}
+  </div> 
   </>
 )}
 
