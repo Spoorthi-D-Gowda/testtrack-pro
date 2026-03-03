@@ -1,8 +1,7 @@
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
-
 import { useState, useEffect } from "react";
-
+import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../auth.css";
@@ -49,6 +48,12 @@ useEffect(() => {
   }
 }, [location.pathname, navigate]);
 
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get("oauth") === "failed") {
+    setError("Account not registered. Please register first.");
+  }
+}, [location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -144,8 +149,18 @@ if (remember) {
 
 </div>
 
-
           <button type="submit" className="login-btn">Login</button>
+
+<button
+  className="oauth-btn google-btn"
+  onClick={() =>
+    (window.location.href =
+      "http://localhost:5000/api/auth/google")
+  }
+>
+  <FcGoogle size={20} />
+  <span>Continue with Google</span>
+</button>
 
         </form>
 

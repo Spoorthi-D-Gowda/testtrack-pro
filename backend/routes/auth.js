@@ -13,6 +13,9 @@ const prisma = new PrismaClient();
 const role = require("../middleware/role");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
+const passport = require("../config/passport");
+
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -543,6 +546,123 @@ router.post("/logout-all", authMiddleware, async (req, res) => {
 
   res.json({ msg: "Logged out from all devices" });
 });
+
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false }),
+  async (req, res) => {
+
+    const user = req.user;
+
+    // 🔥 If new user → redirect to role selection
+    if (user.isNewUser) {
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/choose-role?email=${user.email}&name=${user.name}&googleId=${user.googleId}`
+      );
+    }
+
+    // Existing user → normal login
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.redirect(
+      `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    );
+  }
+);
+router.post("/google/register", async (req, res) => {
+
+  const { email, name, role, googleId } = req.body;
+
+  try {
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        role,
+        googleId,
+        isVerified: true,
+      },
+    });
+
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.json({ accessToken, refreshToken });
+
+  } catch (err) {
+    res.status(500).json({ msg: "OAuth registration failed" });
+  }
+});
+
+router.get(
+  "/github",
+  passport.authenticate("github", { scope: ["user:email"] })
+);
+
+router.get(
+  "/github/callback",
+  passport.authenticate("github", { session: false }),
+  async (req, res) => {
+
+    const user = req.user;
+
+    const accessToken = jwt.sign(
+      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    const refreshToken = jwt.sign(
+      { id: user.id },
+      process.env.JWT_REFRESH_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+
+    res.redirect(
+      `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`
+    );
+  }
+);
 // ================= GET ALL USERS (ADMIN ONLY) =================
 router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) => {
     try {

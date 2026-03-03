@@ -17,6 +17,8 @@ const executionRoutes = require("./routes/execution");
 const testRunRoutes = require("./routes/testrun");
 const reportRoutes = require("./routes/reports");
 const bugReports = require("./routes/bugReports");
+const session = require("express-session");
+const passport = require("./config/passport");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +32,9 @@ app.use(cors({
 
 app.use("/api/suites", suiteRoutes);
 app.use("/api/export", exportRoutes);
-
+app.use(session({ secret: "secret", resave: false, saveUninitialized: false }));
+app.use(passport.initialize());
+app.use(passport.session());
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/bugs", bugRoutes);
 
