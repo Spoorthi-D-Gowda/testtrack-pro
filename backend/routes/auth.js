@@ -239,22 +239,41 @@ router.post(
         },
       });
 
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
+      // 🔐 Access Token (15 min)
+const accessToken = jwt.sign(
+  { 
+    id: user.id, 
+    role: user.role,
+    tokenVersion: user.tokenVersion 
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "15m" }
+);
 
-      res.json({
-        msg: "Login successful",
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      });
+// 🔐 Refresh Token (7 days)
+const refreshToken = jwt.sign(
+  { id: user.id },
+  process.env.JWT_REFRESH_SECRET,
+  { expiresIn: "7d" }
+);
+
+     // Save refresh token in DB
+await prisma.user.update({
+  where: { id: user.id },
+  data: { refreshToken }
+});
+
+res.json({
+  msg: "Login successful",
+  accessToken,
+  refreshToken,
+  user: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  },
+});
 
     } catch (err) {
       console.error(err);
@@ -480,6 +499,50 @@ router.post("/change-password", authMiddleware, async (req, res) => {
   }
 });
 
+router.post("/refresh-token", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ msg: "No refresh token" });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(403).json({ msg: "Invalid refresh token" });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.json({ accessToken: newAccessToken });
+
+  } catch (err) {
+    return res.status(403).json({ msg: "Token expired" });
+  }
+});
+router.post("/logout-all", authMiddleware, async (req, res) => {
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      refreshToken: null,
+      tokenVersion: { increment: 1 }
+    }
+  });
+
+  res.json({ msg: "Logged out from all devices" });
+});
 // ================= GET ALL USERS (ADMIN ONLY) =================
 router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) => {
     try {

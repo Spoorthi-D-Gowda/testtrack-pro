@@ -39,15 +39,15 @@ useEffect(() => {
 
 }, [location]);
 
-  useEffect(() => {
+useEffect(() => {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
-  if (token) {
+  if (token && location.pathname === "/") {
     navigate("/dashboard");
   }
-}, [navigate]);
+}, [location.pathname, navigate]);
 
 
   const handleSubmit = async (e) => {
@@ -62,12 +62,14 @@ useEffect(() => {
         { email, password }
       );
 
-      if (remember) {
-  localStorage.setItem("token", res.data.token);
+if (remember) {
+  localStorage.setItem("accessToken", res.data.accessToken);
+  localStorage.setItem("refreshToken", res.data.refreshToken);
   localStorage.setItem("role", res.data.user.role);
   localStorage.setItem("userId", res.data.user.id);
 } else {
-  sessionStorage.setItem("token", res.data.token);
+  sessionStorage.setItem("accessToken", res.data.accessToken);
+  sessionStorage.setItem("refreshToken", res.data.refreshToken);
   sessionStorage.setItem("role", res.data.user.role);
   sessionStorage.setItem("userId", res.data.user.id);
 }
@@ -75,9 +77,7 @@ useEffect(() => {
 
       setSuccess("Login successful! Redirecting... ");
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      navigate("/dashboard");
 
     } catch (err) {
       if (err.response) {

@@ -18,10 +18,10 @@ import SuiteExecution from "./pages/SuiteExecution";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
-  return token ? children : <Navigate to="/" />;
+  return token ? children : <Navigate to="/" replace />;
 }
 
 function App() {

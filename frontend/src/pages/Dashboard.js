@@ -35,17 +35,19 @@ const [reportTab, setReportTab] = useState("execution");
     window.open("http://localhost:5000/api/export/report");
   };
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("userId");
+const logout = useCallback(() => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("role");
+  localStorage.removeItem("userId");
 
-    sessionStorage.removeItem("token");
-    sessionStorage.removeItem("role");
-    sessionStorage.removeItem("userId");
+  sessionStorage.removeItem("accessToken");
+  sessionStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("role");
+  sessionStorage.removeItem("userId");
 
-    navigate("/");
-  }, [navigate]);
+  navigate("/");
+}, [navigate]);
 
   const location = useLocation();
 
@@ -63,42 +65,79 @@ useEffect(() => {
 
 useEffect(() => {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
   if (!token) {
     navigate("/");
     return;
   }
 
-  axios
-    .get("http://localhost:5000/api/profile", {
-      headers: {
-        "x-auth-token": token,
-      },
-    })
-    .then((res) => {
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/profile",
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
       setUser(res.data.user);
-    })
-    .catch((err) => {
+
+    } catch (err) {
       console.error("Dashboard error:", err);
-      logout();
-    });
+
+      if (err.response?.status === 401) {
+        logout();
+      }
+    }
+  };
+
+  fetchProfile();
 
 }, [navigate, logout]);
 
 useEffect(() => {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
+
+  if (!token) return;
 
   axios
     .get("http://localhost:5000/api/dashboard/stats", {
       headers: { "x-auth-token": token }
     })
     .then(res => setStats(res.data))
-    .catch(err => console.error(err));
+    .catch(err => console.error("Stats error:", err));
+
 }, []);
+
+useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      const token =
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("accessToken");
+
+      if (!token) return;
+
+      await axios.get("http://localhost:5000/api/profile", {
+        headers: { "x-auth-token": token },
+      });
+
+    } catch (err) {
+      console.log("Session invalidated");
+
+      // 🔥 Auto logout if token invalid
+      logout();
+    }
+
+  }, 10000); // check every 10 seconds
+
+  return () => clearInterval(interval);
+
+}, [logout]);
 
   return (
     <div className="dashboard-wrapper">
@@ -311,6 +350,38 @@ useEffect(() => {
         >
           Logout
         </button>
+
+        <button
+  onClick={async () => {
+    try {
+      const token =
+        localStorage.getItem("accessToken") ||
+        sessionStorage.getItem("accessToken");
+
+      await axios.post(
+        "http://localhost:5000/api/auth/logout-all",
+        {},
+        {
+          headers: { "x-auth-token": token },
+        }
+      );
+
+      // 🔥 Clear current device
+      localStorage.clear();
+      sessionStorage.clear();
+
+      alert("Logged out from all devices");
+
+      navigate("/");
+
+    } catch (err) {
+      console.error(err);
+      alert("Logout failed");
+    }
+  }}
+>
+  Logout All Devices
+</button>
       </div>
 
       {/* RIGHT CONTENT */}
