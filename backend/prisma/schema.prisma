@@ -59,6 +59,10 @@ model User {
   failedAttempts  Int                 @default(0)
   lockUntil       DateTime?
   passwordHistory PasswordHistory[]
+  refreshToken    String?
+  tokenVersion    Int                 @default(0)
+  googleId        String?             @unique
+  githubId        String?             @unique
 }
 
 model TestCase {

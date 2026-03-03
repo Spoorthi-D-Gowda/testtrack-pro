@@ -13,21 +13,21 @@ import ExecuteTestCase from "./pages/ExecuteTestCase";
 import TestRuns from "./pages/TestRuns";
 import ExecutionCompare from "./pages/ExecutionCompare";
 import SuiteExecution from "./pages/SuiteExecution";
-
-
+import OAuthSuccess from "./pages/OAuthSuccess";
+import ChooseRole from "./pages/ChooseRole";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
-  return token ? children : <Navigate to="/" />;
+  return token ? children : <Navigate to="/" replace />;
 }
 
 function App() {
   return (
     <Routes>
-
+<Route path="/oauth-success" element={<OAuthSuccess />} />
       <Route path="/" element={<Login />} />
 
       <Route path="/register" element={<Register />} />
@@ -102,7 +102,7 @@ function App() {
   path="/suite-execution/:suiteExecutionId"
   element={<SuiteExecution />}
 />
-
+<Route path="/choose-role" element={<ChooseRole />} />
     </Routes>
   );
 }

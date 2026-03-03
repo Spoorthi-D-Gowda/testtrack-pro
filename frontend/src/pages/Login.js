@@ -1,8 +1,7 @@
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useLocation } from "react-router-dom";
-
 import { useState, useEffect } from "react";
-
+import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../auth.css";
@@ -39,16 +38,22 @@ useEffect(() => {
 
 }, [location]);
 
-  useEffect(() => {
+useEffect(() => {
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken");
 
-  if (token) {
+  if (token && location.pathname === "/") {
     navigate("/dashboard");
   }
-}, [navigate]);
+}, [location.pathname, navigate]);
 
+useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  if (params.get("oauth") === "failed") {
+    setError("Account not registered. Please register first.");
+  }
+}, [location]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,12 +67,14 @@ useEffect(() => {
         { email, password }
       );
 
-      if (remember) {
-  localStorage.setItem("token", res.data.token);
+if (remember) {
+  localStorage.setItem("accessToken", res.data.accessToken);
+  localStorage.setItem("refreshToken", res.data.refreshToken);
   localStorage.setItem("role", res.data.user.role);
   localStorage.setItem("userId", res.data.user.id);
 } else {
-  sessionStorage.setItem("token", res.data.token);
+  sessionStorage.setItem("accessToken", res.data.accessToken);
+  sessionStorage.setItem("refreshToken", res.data.refreshToken);
   sessionStorage.setItem("role", res.data.user.role);
   sessionStorage.setItem("userId", res.data.user.id);
 }
@@ -75,9 +82,7 @@ useEffect(() => {
 
       setSuccess("Login successful! Redirecting... ");
 
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1500);
+      navigate("/dashboard");
 
     } catch (err) {
       if (err.response) {
@@ -144,8 +149,18 @@ useEffect(() => {
 
 </div>
 
-
           <button type="submit" className="login-btn">Login</button>
+
+<button
+  className="oauth-btn google-btn"
+  onClick={() =>
+    (window.location.href =
+      "http://localhost:5000/api/auth/google")
+  }
+>
+  <FcGoogle size={20} />
+  <span>Continue with Google</span>
+</button>
 
         </form>
 

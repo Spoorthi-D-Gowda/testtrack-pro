@@ -1,6 +1,9 @@
 const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client");
 
-module.exports = function (req, res, next) {
+const prisma = new PrismaClient();
+
+module.exports = async function (req, res, next) {
   try {
 
     const token = req.header("x-auth-token");
@@ -13,10 +16,27 @@ module.exports = function (req, res, next) {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    // Token payload contains: { id, role }
+    // 🔥 Fetch user from DB
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id }
+    });
+
+    if (!user) {
+      return res.status(401).json({
+        msg: "User not found."
+      });
+    }
+
+    // 🔥 Compare tokenVersion
+    if (user.tokenVersion !== decoded.tokenVersion) {
+      return res.status(401).json({
+        msg: "Session invalidated. Please login again."
+      });
+    }
+
     req.user = {
-      id: decoded.id,
-      role: decoded.role
+      id: user.id,
+      role: user.role
     };
 
     next();

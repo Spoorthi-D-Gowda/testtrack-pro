@@ -13,6 +13,9 @@ const prisma = new PrismaClient();
 const role = require("../middleware/role");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
+const passport = require("../config/passport");
+
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -239,22 +242,41 @@ router.post(
         },
       });
 
-      const token = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET,
-        { expiresIn: "1d" }
-      );
+      // 🔐 Access Token (15 min)
+const accessToken = jwt.sign(
+  { 
+    id: user.id, 
+    role: user.role,
+    tokenVersion: user.tokenVersion 
+  },
+  process.env.JWT_SECRET,
+  { expiresIn: "15m" }
+);
 
-      res.json({
-        msg: "Login successful",
-        token,
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        },
-      });
+// 🔐 Refresh Token (7 days)
+const refreshToken = jwt.sign(
+  { id: user.id },
+  process.env.JWT_REFRESH_SECRET,
+  { expiresIn: "7d" }
+);
+
+     // Save refresh token in DB
+await prisma.user.update({
+  where: { id: user.id },
+  data: { refreshToken }
+});
+
+res.json({
+  msg: "Login successful",
+  accessToken,
+  refreshToken,
+  user: {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  },
+});
 
     } catch (err) {
       console.error(err);
@@ -479,6 +501,114 @@ router.post("/change-password", authMiddleware, async (req, res) => {
     res.status(500).json({ msg: "Server error" });
   }
 });
+
+router.post("/refresh-token", async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ msg: "No refresh token" });
+  }
+
+  try {
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+    });
+
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(403).json({ msg: "Invalid refresh token" });
+    }
+
+    const newAccessToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    res.json({ accessToken: newAccessToken });
+
+  } catch (err) {
+    return res.status(403).json({ msg: "Token expired" });
+  }
+});
+router.post("/logout-all", authMiddleware, async (req, res) => {
+  await prisma.user.update({
+    where: { id: req.user.id },
+    data: {
+      refreshToken: null,
+      tokenVersion: { increment: 1 }
+    }
+  });
+
+  res.json({ msg: "Logged out from all devices" });
+});
+
+router.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] })
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false }),
+  async (req, res) => {
+    try {
+      const googleEmail = req.user.email;
+
+      const existingUser = await prisma.user.findUnique({
+        where: { email: googleEmail },
+      });
+
+      // ❌ If not registered
+      if (!existingUser) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/?oauth=failed`
+        );
+      }
+
+      // ❌ If not verified
+      if (!existingUser.isVerified) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/?oauth=notverified`
+        );
+      }
+
+      // ✅ Normal login using DB role
+      const accessToken = jwt.sign(
+        {
+          id: existingUser.id,
+          role: existingUser.role,
+          tokenVersion: existingUser.tokenVersion,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
+      );
+
+      const refreshToken = jwt.sign(
+        { id: existingUser.id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { refreshToken },
+      });
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${existingUser.role}&userId=${existingUser.id}`
+      );
+
+    } catch (err) {
+      console.error(err);
+      return res.redirect(`${process.env.FRONTEND_URL}/?oauth=failed`);
+    }
+  }
+);
 
 // ================= GET ALL USERS (ADMIN ONLY) =================
 router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) => {
