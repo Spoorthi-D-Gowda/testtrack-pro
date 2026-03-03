@@ -1,3 +1,22 @@
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.change-password-btn {
+  background-color: #2563eb;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.change-password-btn:hover {
+  background-color: #1d4ed8;
+}
 /* Box around Recent Failed Test Cases */
 .report-section-box {
   background: #ffffff;

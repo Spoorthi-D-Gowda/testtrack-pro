@@ -11,7 +11,7 @@ import ExecutionCompare from "./ExecutionCompare";
 import SuiteExecution from "./SuiteExecution";
 import Reports from "./Reports";
 import { useLocation } from "react-router-dom";
-import GridLayout from "react-grid-layout";
+import ChangePassword from "./ChangePassword";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 export default function Dashboard() {
@@ -324,13 +324,27 @@ useEffect(() => {
     ) : (
       <>
         {/* USER INFO */}
+  
         <div className="welcome-card">
   <div>
     <h2 className="welcome-title">Welcome back,</h2>
     <h1 className="welcome-name">{user.name || user.email}</h1>
     <p className="welcome-role">{user.role}</p>
   </div>
+
+<button
+  className="change-password-btn"
+  onClick={() => {
+    setActiveSection("changePassword");
+    setTestCaseTab(null);
+  }}
+>
+  Change Password
+</button>
+
 </div>
+
+
 
 {role === "developer" && stats?.devStats && (
   <>
@@ -591,6 +605,9 @@ useEffect(() => {
 )}
 {activeSection === "reports" && (
   <Reports reportTab={reportTab} />
+)}
+{activeSection === "changePassword" && (
+  <ChangePassword />
 )}
 
 </div>
