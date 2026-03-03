@@ -556,113 +556,60 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
   async (req, res) => {
+    try {
+      const googleEmail = req.user.email;
 
-    const user = req.user;
+      const existingUser = await prisma.user.findUnique({
+        where: { email: googleEmail },
+      });
 
-    // 🔥 If new user → redirect to role selection
-    if (user.isNewUser) {
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/choose-role?email=${user.email}&name=${user.name}&googleId=${user.googleId}`
+      // ❌ If not registered
+      if (!existingUser) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/?oauth=failed`
+        );
+      }
+
+      // ❌ If not verified
+      if (!existingUser.isVerified) {
+        return res.redirect(
+          `${process.env.FRONTEND_URL}/?oauth=notverified`
+        );
+      }
+
+      // ✅ Normal login using DB role
+      const accessToken = jwt.sign(
+        {
+          id: existingUser.id,
+          role: existingUser.role,
+          tokenVersion: existingUser.tokenVersion,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "15m" }
       );
+
+      const refreshToken = jwt.sign(
+        { id: existingUser.id },
+        process.env.JWT_REFRESH_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { refreshToken },
+      });
+
+      return res.redirect(
+        `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}&role=${existingUser.role}&userId=${existingUser.id}`
+      );
+
+    } catch (err) {
+      console.error(err);
+      return res.redirect(`${process.env.FRONTEND_URL}/?oauth=failed`);
     }
-
-    // Existing user → normal login
-    const accessToken = jwt.sign(
-      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: user.id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
-
-    res.redirect(
-      `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`
-    );
   }
 );
-router.post("/google/register", async (req, res) => {
 
-  const { email, name, role, googleId } = req.body;
-
-  try {
-
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        role,
-        googleId,
-        isVerified: true,
-      },
-    });
-
-    const accessToken = jwt.sign(
-      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: user.id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
-
-    res.json({ accessToken, refreshToken });
-
-  } catch (err) {
-    res.status(500).json({ msg: "OAuth registration failed" });
-  }
-});
-
-router.get(
-  "/github",
-  passport.authenticate("github", { scope: ["user:email"] })
-);
-
-router.get(
-  "/github/callback",
-  passport.authenticate("github", { session: false }),
-  async (req, res) => {
-
-    const user = req.user;
-
-    const accessToken = jwt.sign(
-      { id: user.id, role: user.role, tokenVersion: user.tokenVersion },
-      process.env.JWT_SECRET,
-      { expiresIn: "15m" }
-    );
-
-    const refreshToken = jwt.sign(
-      { id: user.id },
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { refreshToken },
-    });
-
-    res.redirect(
-      `${process.env.FRONTEND_URL}/oauth-success?accessToken=${accessToken}&refreshToken=${refreshToken}`
-    );
-  }
-);
 // ================= GET ALL USERS (ADMIN ONLY) =================
 router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) => {
     try {
