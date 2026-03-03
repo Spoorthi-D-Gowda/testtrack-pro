@@ -169,39 +169,76 @@ router.post(
   [body("email").isEmail(), body("password").exists()],
   async (req, res) => {
     const errors = validationResult(req);
-
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ msg: "Invalid input" });
     }
 
     const { email, password } = req.body;
 
     try {
-      // 1️⃣ Find user
       const user = await prisma.user.findUnique({
         where: { email },
       });
 
-      // 2️⃣ Check if user exists
       if (!user) {
         return res.status(400).json({ msg: "Invalid credentials" });
       }
 
-      // 3️⃣ ✅ Check if email verified (ADD HERE)
+      // 🚨 1️⃣ Check if account is locked
+      if (user.lockUntil && user.lockUntil > new Date()) {
+        return res.status(403).json({
+          msg: "Account locked. Try again after 15 minutes.",
+        });
+      }
+
+      // 🚨 2️⃣ Check if email verified
       if (!user.isVerified) {
         return res.status(400).json({
           msg: "Please verify your email first",
         });
       }
 
-      // 4️⃣ Check password
       const isMatch = await bcrypt.compare(password, user.password);
 
+      // ❌ Wrong password
       if (!isMatch) {
-        return res.status(400).json({ msg: "Invalid credentials" });
+        const attempts = user.failedAttempts + 1;
+
+        // Lock after 5 attempts
+        if (attempts >= 5) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedAttempts: 0,
+              lockUntil: new Date(Date.now() + 15 * 60 * 1000), // 15 min
+            },
+          });
+
+          return res.status(403).json({
+            msg: "Too many failed attempts. Account locked for 15 minutes.",
+          });
+        }
+
+        // Update failed attempts
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { failedAttempts: attempts },
+        });
+
+        return res.status(400).json({
+          msg: `Invalid credentials. ${5 - attempts} attempts remaining.`,
+        });
       }
 
-      // 5️⃣ Generate token
+      // ✅ Successful login → reset attempts
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedAttempts: 0,
+          lockUntil: null,
+        },
+      });
+
       const token = jwt.sign(
         { id: user.id, role: user.role },
         process.env.JWT_SECRET,
@@ -226,7 +263,6 @@ router.post(
   }
 );
 
-
 // ========== FORGOT PASSWORD ==========
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
@@ -237,13 +273,14 @@ router.post("/forgot-password", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ msg: "User not found " });
+      return res.status(400).json({ msg: "User not found" });
     }
 
-    // Generate token
+    // 🔐 Generate token
     const token = crypto.randomBytes(32).toString("hex");
 
-    const expiry = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+    // ⏳ 1 hour expiry
+    const expiry = new Date(Date.now() + 60 * 60 * 1000);
 
     await prisma.user.update({
       where: { email },
@@ -253,17 +290,46 @@ router.post("/forgot-password", async (req, res) => {
       },
     });
 
-    // For now: log link (later email)
-    console.log("Password Reset Link:");
-    console.log(`http://localhost:3000/reset/${token}`);
+    const resetLink = `http://localhost:3000/reset/${token}`;
+
+    // 📧 Send email
+    await transporter.sendMail({
+      from: `"TestTrack" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: "Reset Your Password",
+      html: `
+        <div style="font-family: Arial;">
+          <h2>Password Reset</h2>
+          <p>Click below to reset your password:</p>
+
+          <a href="${resetLink}"
+            style="
+              display:inline-block;
+              padding:10px 20px;
+              background:#dc2626;
+              color:white;
+              text-decoration:none;
+              border-radius:5px;
+            ">
+            Reset Password
+          </a>
+
+          <p style="margin-top:15px;">
+            This link expires in 1 hour.
+          </p>
+
+          <p>If you did not request this, ignore this email.</p>
+        </div>
+      `,
+    });
 
     res.json({
-      msg: "Reset link sent to email (check console) ",
+      msg: "Password reset link sent to your email",
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error " });
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
@@ -283,15 +349,46 @@ router.post("/reset-password/:token", async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ msg: "Invalid or expired token " });
+      return res.status(400).json({ msg: "Invalid or expired token" });
     }
 
-    if (password.length < 6) {
-      return res.status(400).json({ msg: "Weak password " });
+    // 🔐 Strong password check
+    const strongPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+    if (!strongPassword.test(password)) {
+      return res.status(400).json({
+        msg: "Password must meet strength requirements",
+      });
+    }
+
+    // 🚫 Check last 5 passwords
+    const lastPasswords = await prisma.passwordHistory.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+
+    for (let old of lastPasswords) {
+      const match = await bcrypt.compare(password, old.password);
+      if (match) {
+        return res.status(400).json({
+          msg: "Cannot reuse last 5 passwords",
+        });
+      }
     }
 
     const hashed = await bcrypt.hash(password, 10);
 
+    // Save old password to history
+    await prisma.passwordHistory.create({
+      data: {
+        userId: user.id,
+        password: user.password,
+      },
+    });
+
+    // Update user
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -301,11 +398,85 @@ router.post("/reset-password/:token", async (req, res) => {
       },
     });
 
-    res.json({ msg: "Password reset successful " });
+    res.json({ msg: "Password reset successful" });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ msg: "Server error " });
+    res.status(500).json({ msg: "Server error" });
+  }
+});
+
+router.post("/change-password", authMiddleware, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    // 1️⃣ Verify current password
+    const isMatch = await bcrypt.compare(
+      currentPassword,
+      user.password
+    );
+
+    if (!isMatch) {
+      return res.status(400).json({
+        msg: "Current password is incorrect",
+      });
+    }
+
+    // 2️⃣ Strong password validation
+    const strongPassword =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+
+    if (!strongPassword.test(newPassword)) {
+      return res.status(400).json({
+        msg: "Password must meet strength requirements",
+      });
+    }
+
+    // 3️⃣ Check last 5 passwords
+    const lastPasswords = await prisma.passwordHistory.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    });
+
+    for (let old of lastPasswords) {
+      const match = await bcrypt.compare(newPassword, old.password);
+      if (match) {
+        return res.status(400).json({
+          msg: "Cannot reuse last 5 passwords",
+        });
+      }
+    }
+
+    // 4️⃣ Save current password into history
+    await prisma.passwordHistory.create({
+      data: {
+        userId: user.id,
+        password: user.password,
+      },
+    });
+
+    // 5️⃣ Update password
+    const hashed = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashed },
+    });
+
+    res.json({ msg: "Password changed successfully" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ msg: "Server error" });
   }
 });
 
