@@ -10,24 +10,25 @@ const prisma = new PrismaClient();
 const router = express.Router();
 
 const generateTCId = async (projectId) => {
-  const lastCase = await prisma.testCase.findFirst({
-    where: { projectId },
-    orderBy: { id: "desc" }
-  });
 
   const year = new Date().getFullYear();
 
-  if (!lastCase) {
-    return `TC-${year}-00001`;
+  const lastCase = await prisma.testCase.findFirst({
+    where: { projectId },
+    orderBy: { id: "desc" },
+    select: { testCaseId: true }
+  });
+
+  let nextNumber = 1;
+
+  if (lastCase && lastCase.testCaseId) {
+    const parts = lastCase.testCaseId.split("-");
+    nextNumber = parseInt(parts[2]) + 1;
   }
 
-  const lastNumber = parseInt(
-    lastCase.testCaseId.split("-")[2]
-  );
+  const padded = String(nextNumber).padStart(5, "0");
 
-  const newNumber = String(lastNumber + 1).padStart(5, "0");
-
-  return `TC-${year}-${newNumber}`;
+  return `TC-${year}-${padded}`;
 };
 
 const multer = require("multer");
@@ -223,14 +224,15 @@ if (!projectId) {
 );
 
 // ================= CREATE TEST CASE =================
-router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
+router.post("/", auth, role(["tester", "admin"]), async (req, res) => {
+
   try {
 
     const projectId = Number(req.headers["x-project-id"]);
 
-if (!projectId) {
-  return res.status(400).json({ msg: "Project ID required" });
-}
+    if (!projectId) {
+      return res.status(400).json({ msg: "Project ID required" });
+    }
 
     const {
       title,
@@ -255,10 +257,59 @@ if (!projectId) {
       automationLink,
 
       steps,
-      
+      customFields
     } = req.body;
 
+    // ================= WORKFLOW VALIDATION =================
 
+    const workflow = await prisma.projectWorkflow.findFirst({
+      where: {
+        projectId,
+        entity: "testcase"
+      }
+    });
+
+    if (workflow && !workflow.statuses.includes(status)) {
+      return res.status(400).json({
+        msg: "Invalid status for this project workflow"
+      });
+    }
+
+    // ================= MODULE VALIDATION =================
+
+    const moduleExists = await prisma.projectModule.findFirst({
+      where: {
+        name: module,
+        projectId
+      }
+    });
+
+    if (!moduleExists) {
+      return res.status(400).json({
+        msg: "Invalid module for this project"
+      });
+    }
+
+    // ================= ENVIRONMENT VALIDATION =================
+
+    if (environment) {
+
+      const envExists = await prisma.projectEnvironment.findFirst({
+        where: {
+          name: environment,
+          projectId
+        }
+      });
+
+      if (!envExists) {
+        return res.status(400).json({
+          msg: "Invalid environment for this project"
+        });
+      }
+
+    }
+
+    // Continue with your existing validations and creation logic...
     // ================= VALIDATION =================
 
     if (!title || title.trim() === "") {
@@ -325,18 +376,7 @@ if (!projectId) {
       }
 
     }
-
-
-    // ================= GENERATE TEST CASE ID =================
-
-    const count = await prisma.testCase.count({
-  where: { projectId }
-});
-
-    const year = new Date().getFullYear();
-
-    const testCaseId =
-      `TC-${year}-${String(count + 1).padStart(5, "0")}`;
+const testCaseId = await generateTCId(projectId);
 
 
     // ================= CREATE TEST CASE =================
@@ -395,12 +435,27 @@ if (!projectId) {
           })),
 
         },
+         customFieldValues: customFields
+      ? {
+          create: Object.entries(customFields).map(
+            ([fieldId, value]) => ({
+              fieldId: Number(fieldId),
+              value: String(value)
+            })
+          )
+        }
+      : undefined
 
       },
 
-      include: {
-        steps: true,
-      },
+     include: {
+  steps: true,
+  customFieldValues: {
+    include: {
+      field: true
+    }
+  }
+}
 
     });
 
@@ -455,6 +510,11 @@ router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
       include: {
         steps: true,
         attachments: true,
+        customFieldValues: {
+    include: {
+      field: true
+    }
+  },
         user: {
           select: { name: true, email: true }
         }
@@ -1100,14 +1160,7 @@ router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async
 
     const data = template.templateData;
 
-   const count = await prisma.testCase.count({
-  where: { projectId }
-});
-
-    const year = new Date().getFullYear();
-
-    const testCaseId =
-      `TC-${year}-${String(count + 1).padStart(5, "0")}`;
+   const testCaseId = await generateTCId(projectId);
 
     const newTestCase =
       await prisma.testCase.create({

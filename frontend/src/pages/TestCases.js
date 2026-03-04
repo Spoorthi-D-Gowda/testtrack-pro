@@ -43,10 +43,13 @@ export default function TestCasesManager({
   const [showPreview, setShowPreview] = useState(false);
   const [showHistoryPopup, setShowHistoryPopup] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState([]);
-
-  const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+  const [modules, setModules] = useState([]);
+const [environments, setEnvironments] = useState([]);
+const [customFields, setCustomFields] = useState([]);
+const [customValues, setCustomValues] = useState({})
+const token =
+localStorage.getItem("accessToken") ||
+sessionStorage.getItem("accessToken");
 
   const role =
   localStorage.getItem("role") ||
@@ -85,6 +88,26 @@ useEffect(() => {
     fetchTemplates();
   }
 }, [activeTab, fetchTemplates]);
+
+useEffect(() => {
+
+  const loadProjectConfig = async () => {
+
+    const projectId = localStorage.getItem("projectId");
+
+    const modulesRes = await api.get(`/projects/modules/${projectId}`);
+    const envRes = await api.get(`/projects/environments/${projectId}`);
+    const fieldsRes = await api.get(`/projects/custom-fields/${projectId}`);
+
+    setModules(modulesRes.data);
+    setEnvironments(envRes.data);
+    setCustomFields(fieldsRes.data);
+
+  };
+
+  loadProjectConfig();
+
+}, []);
 
 // Add new step
 const addStep = () => {
@@ -220,6 +243,8 @@ setTestCaseTab("view");
 
           automationStatus: "Not Automated",
           automationLink: "",
+
+          customFields: customValues,
 
           steps: stepsList,
           expected,
@@ -860,12 +885,21 @@ return (
         required
       />
 
-      <input
-        placeholder="Module"
-        value={module}
-        onChange={(e) => setModule(e.target.value)}
-        required
-      />
+      <select
+ value={module}
+ onChange={(e)=>setModule(e.target.value)}
+ required
+>
+
+<option value="">Select Module</option>
+
+{modules.map(m => (
+<option key={m.id} value={m.name}>
+{m.name}
+</option>
+))}
+
+</select>
 
       <select value={priority} onChange={(e) => setPriority(e.target.value)}>
         <option>High</option>
@@ -910,11 +944,40 @@ return (
         onChange={(e) => setTestData(e.target.value)}
       />
 
-      <textarea
-        placeholder="Environment"
-        value={environment}
-        onChange={(e) => setEnvironment(e.target.value)}
-      />
+      <select
+ value={environment}
+ onChange={(e)=>setEnvironment(e.target.value)}
+>
+
+<option value="">Select Environment</option>
+
+{environments.map(env => (
+<option key={env.id} value={env.name}>
+{env.name}
+</option>
+))}
+
+</select>
+<h4>Custom Fields</h4>
+
+{customFields.map((field) => (
+
+  <div key={field.id}>
+
+    <label>{field.name}</label>
+
+    <input
+      type="text"
+      placeholder={field.name}
+      onChange={(e) => setCustomValues({
+        ...customValues,
+        [field.id]: e.target.value
+      })}
+    />
+
+  </div>
+
+))}
 
       <h4>Test Steps</h4>
 
