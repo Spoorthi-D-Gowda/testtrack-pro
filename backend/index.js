@@ -19,6 +19,7 @@ const reportRoutes = require("./routes/reports");
 const bugReports = require("./routes/bugReports");
 const session = require("express-session");
 const passport = require("./config/passport");
+const projectRoutes = require("./routes/project");
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -26,9 +27,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors({
   origin: "http://localhost:3000",
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type","Authorization", "x-auth-token"],
-  credentials: true,
+  allowedHeaders: [
+    "Content-Type",
+    "x-auth-token",
+    "x-project-id"
+  ]
 }));
+
 
 app.use("/api/suites", suiteRoutes);
 app.use("/api/export", exportRoutes);
@@ -45,6 +50,7 @@ app.use("/api/testruns", testRunRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/reports", bugReports);
+app.use("/api/projects", projectRoutes);
 
 app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");

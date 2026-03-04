@@ -11,14 +11,30 @@ router.post(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     try {
       const executionId = Number(req.params.executionId);
       const { totalTime } = req.body; // 👈 receive from frontend
 
-      const stepExecutions = await prisma.testStepExecution.findMany({
-        where: { executionId },
-      });
+      const execution = await prisma.testExecution.findFirst({
+  where: {
+    id: executionId,
+    testCase: { projectId }
+  }
+});
 
+if (!execution) {
+  return res.status(404).json({ msg: "Execution not found in this project" });
+}
+
+const stepExecutions = await prisma.testStepExecution.findMany({
+  where: { executionId },
+});
       let finalStatus = "Pass";
 
       if (stepExecutions.some(s => s.status === "Fail")) {
@@ -60,6 +76,12 @@ router.post(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     try {
       const testCaseId = Number(req.params.testCaseId);
 
@@ -70,10 +92,13 @@ router.post(
 
       console.log("RunId received:", runId);
 
-      const testCase = await prisma.testCase.findUnique({
-        where: { id: testCaseId },
-        include: { steps: true },
-      });
+      const testCase = await prisma.testCase.findFirst({
+  where: {
+    id: testCaseId,
+    projectId
+  },
+  include: { steps: true }
+});
 
       if (!testCase) {
         return res.status(404).json({ msg: "Test case not found" });
@@ -120,15 +145,21 @@ router.get(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     try {
 
-      let whereCondition = {};
+      let whereCondition = {
+  testCase: { projectId }
+};
 
-      // Tester sees only their executions
-      if (req.user.role === "tester") {
-        whereCondition.testerId = req.user.id;
-      }
-
+if (req.user.role === "tester") {
+  whereCondition.testerId = req.user.id;
+}
       const executions = await prisma.testExecution.findMany({
         where: whereCondition,
         include: {
@@ -163,6 +194,12 @@ router.get(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+  const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+    
     try {
 
       const testCaseId = Number(req.params.testCaseId);
@@ -173,12 +210,11 @@ router.get(
         });
       }
 
-      const executions = await prisma.testExecution.findMany({
+     const executions = await prisma.testExecution.findMany({
   where: {
-    testCaseId: testCaseId,
-    status: {
-      not: "In Progress",
-    },
+    testCaseId,
+    testCase: { projectId },
+    status: { not: "In Progress" }
   },
         include: {
           stepExecutions: {
@@ -220,11 +256,20 @@ router.get(
   "/:executionId",
   auth,
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     try {
       const executionId = Number(req.params.executionId);
 
-      const execution = await prisma.testExecution.findUnique({
-        where: { id: executionId },
+      const execution = await prisma.testExecution.findFirst({
+  where: {
+    id: executionId,
+    testCase: { projectId }
+  },
         include: {
           testCase: true,
           stepExecutions: {
@@ -259,20 +304,40 @@ router.put(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const stepExecutionId = Number(req.params.stepExecutionId);
+
+const existing = await prisma.testStepExecution.findFirst({
+  where: {
+    id: stepExecutionId,
+    execution: {
+      testCase: { projectId }
+    }
+  }
+});
+
+if (!existing) {
+  return res.status(404).json({ msg: "Step not found in this project" });
+}
+
     try {
-      const stepExecutionId = Number(req.params.stepExecutionId);
       const { actual, status, notes } = req.body;
 
-      const existing = await prisma.testStepExecution.findUnique({
+      const stepData = await prisma.testStepExecution.findUnique({
   where: { id: stepExecutionId },
 });
 
 const updated = await prisma.testStepExecution.update({
   where: { id: stepExecutionId },
   data: {
-    actual: actual ?? existing.actual,
-    status: status ?? existing.status,
-    notes: notes ?? existing.notes,
+    actual: actual ?? stepData.actual,
+status: status ?? stepData.status,
+notes: notes ?? stepData.notes,
   },
 });
 
@@ -313,8 +378,28 @@ router.post(
   role(["tester", "admin"]),
   evidenceUpload.single("file"),
   async (req, res) => {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const stepExecutionId = Number(req.params.stepExecutionId);
+
+const step = await prisma.testStepExecution.findFirst({
+  where: {
+    id: stepExecutionId,
+    execution: {
+      testCase: { projectId }
+    }
+  }
+});
+
+if (!step) {
+  return res.status(404).json({ msg: "Invalid step for this project" });
+}
+
     try {
-      const stepExecutionId = Number(req.params.stepExecutionId);
 
       if (!req.file) {
         return res.status(400).json({ msg: "File required" });

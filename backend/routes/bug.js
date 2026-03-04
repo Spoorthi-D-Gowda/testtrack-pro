@@ -6,10 +6,12 @@ const role = require("../middleware/role");
 const prisma = new PrismaClient();
 const router = express.Router();
 
-const generateBugId = async () => {
+const generateBugId = async (projectId) => {
   const year = new Date().getFullYear();
 
-  const count = await prisma.bug.count();
+  const count = await prisma.bug.count({
+    where: { projectId }
+  });
 
   const padded = String(count + 1).padStart(5, "0");
 
@@ -48,7 +50,20 @@ router.post(
 }
 
       // Prevent duplicate bug for same failed step
-     const existingBug = await prisma.bug.findFirst({
+  // Ensure project header exists
+const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+// Make sure step belongs to selected project
+if (stepExecution.execution.testCase.projectId !== projectId) {
+  return res.status(403).json({ msg: "Invalid project context" });
+}
+
+// Prevent duplicate active bug
+const existingBug = await prisma.bug.findFirst({
   where: {
     stepExecutionId,
     executionId: stepExecution.executionId,
@@ -96,7 +111,7 @@ if (testCaseSeverity === "Blocker") {
   mappedSeverity = BugSeverity.Major; // fallback
 }
 
-      const bugId = await generateBugId();
+     const bugId = await generateBugId(projectId);
 
     try {
 
@@ -126,6 +141,9 @@ ${stepExecution.notes}
       priority: mappedPriority,
       severity: mappedSeverity,
       status: BugStatus.New,
+
+projectId: stepExecution.execution.testCase.projectId,
+
     },
   });
 
@@ -166,6 +184,14 @@ router.get(
       const { priority, severity, status, sortBy } = req.query;
 
       let whereCondition = {};
+
+  const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+whereCondition.projectId = projectId;
 
 if (req.user.role === "developer") {
   whereCondition.assignedToId = req.user.id;
@@ -212,20 +238,27 @@ router.get(
     try {
       const bugId = Number(req.params.bugId);
 
-      const bug = await prisma.bug.findUnique({
-        where: { id: bugId },
-        include: {
-          testCase: true,
-          execution: true,
-          stepExecution: {
-            include: {
-              testStep: true,
-            },
-          },
-          reportedBy: true,
-          assignedTo: true,
-        },
-      });
+const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const bug = await prisma.bug.findFirst({
+  where: {
+    id: bugId,
+    projectId: projectId
+  },
+  include: {
+    testCase: true,
+    execution: true,
+    stepExecution: {
+      include: { testStep: true }
+    },
+    reportedBy: true,
+    assignedTo: true,
+  },
+});
 
       if (!bug) {
         return res.status(404).json({ msg: "Bug not found" });
@@ -254,10 +287,18 @@ router.put(
         });
       }
 
-      // 🔥 Fetch bug first
-      const bug = await prisma.bug.findUnique({
-        where: { id: bugId },
-      });
+const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const bug = await prisma.bug.findFirst({
+  where: {
+    id: bugId,
+    projectId: projectId
+  },
+});
 
       if (!bug) {
         return res.status(404).json({ msg: "Bug not found" });
@@ -308,9 +349,18 @@ router.put(
       const bugId = Number(req.params.bugId);
       const { status, fixNotes, commitLink, rejectionReason } = req.body;
 
-      const bug = await prisma.bug.findUnique({
-        where: { id: bugId },
-      });
+const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const bug = await prisma.bug.findFirst({
+  where: {
+    id: bugId,
+    projectId: projectId
+  },
+});
 
       if (!bug) {
         return res.status(404).json({ msg: "Bug not found" });
@@ -379,9 +429,26 @@ router.put(
 // Delete Bug
 router.delete("/:id", auth, async (req, res) => {
   try {
-    await prisma.bug.delete({
-      where: { id: Number(req.params.id) },
-    });
+    const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const bug = await prisma.bug.findFirst({
+  where: {
+    id: Number(req.params.id),
+    projectId: projectId
+  },
+});
+
+if (!bug) {
+  return res.status(404).json({ msg: "Bug not found" });
+}
+
+await prisma.bug.delete({
+  where: { id: bug.id }
+});
 
     res.json({ msg: "Deleted" });
   } catch (err) {

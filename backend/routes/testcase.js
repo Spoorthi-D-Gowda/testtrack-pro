@@ -9,12 +9,10 @@ const prisma = new PrismaClient();
 
 const router = express.Router();
 
-const generateTCId = async () => {
-
+const generateTCId = async (projectId) => {
   const lastCase = await prisma.testCase.findFirst({
-    orderBy: {
-      id: "desc"
-    }
+    where: { projectId },
+    orderBy: { id: "desc" }
   });
 
   const year = new Date().getFullYear();
@@ -92,7 +90,18 @@ router.post(
   async (req, res) => {
     try {
 
-      const id = Number(req.params.id);
+    const id = Number(req.params.id);
+const projectId = Number(req.headers["x-project-id"]);
+const testCase = await prisma.testCase.findFirst({
+  where: {
+    id,
+    projectId
+  }
+});
+
+if (!testCase) {
+  return res.status(404).json({ msg: "Not found in this project" });
+}
 
       const attachment = await prisma.attachment.create({
         data: {
@@ -153,6 +162,11 @@ router.post(
   async (req, res) => {
     try {
 
+      const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
       const results = [];
 
       const csv = require("csv-parser");
@@ -165,7 +179,7 @@ router.post(
 
           for (const row of results) {
 
-            const newTcId = await generateTCId();
+            const newTcId = await generateTCId(projectId);
 
             await prisma.testCase.create({
               data: {
@@ -185,6 +199,7 @@ router.post(
                 automationStatus: "Manual",
 
                 userId: req.user.id,
+                projectId, 
               },
             });
 
@@ -211,6 +226,12 @@ router.post(
 router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
   try {
 
+    const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     const {
       title,
       description,
@@ -234,6 +255,7 @@ router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
       automationLink,
 
       steps,
+      
     } = req.body;
 
 
@@ -307,7 +329,9 @@ router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
 
     // ================= GENERATE TEST CASE ID =================
 
-    const count = await prisma.testCase.count();
+    const count = await prisma.testCase.count({
+  where: { projectId }
+});
 
     const year = new Date().getFullYear();
 
@@ -346,7 +370,7 @@ router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
         automationLink: automationLink || "",
 
         userId: req.user.id,
-
+        projectId: Number(req.headers["x-project-id"]),
 
         // ================= CREATE STEPS =================
 
@@ -406,35 +430,36 @@ router.post("/", auth,  role(["tester", "admin"]), async (req, res) => {
 });
 
 
-
 // ================= GET ALL TEST CASES =================
 router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
   try {
+
+    const projectId = Number(req.headers["x-project-id"]);
+
+    if (!projectId) {
+      return res.status(400).json({ msg: "Project ID required" });
+    }
 
     const showDeleted = req.query.deleted === "true";
     const title = req.query.title || "";
 
     const cases = await prisma.testCase.findMany({
       where: {
-        isDeleted: showDeleted ? true : false,
+        projectId,
+        isDeleted: showDeleted,
         title: {
           contains: title,
-          mode: "insensitive",   // 🔥 case insensitive search
+          mode: "insensitive",
         },
       },
       include: {
         steps: true,
         attachments: true,
         user: {
-          select: {
-            name: true,
-            email: true,
-          }
+          select: { name: true, email: true }
         }
       },
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(cases);
@@ -452,6 +477,12 @@ router.put(
   upload.array("attachments"),
   async (req, res) => {
   try {
+
+    const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
 
     const id = Number(req.params.id);
 
@@ -476,10 +507,13 @@ const steps = req.body.steps
   : [];
 
     // 1. Get old record
-    const oldCase = await prisma.testCase.findUnique({
-      where: { id },
-      include: { steps: true },
-    });
+    const oldCase = await prisma.testCase.findFirst({
+  where: {
+    id,
+    projectId
+  },
+  include: { steps: true },
+});
 
     if (!oldCase) {
       return res.status(404).json({
@@ -618,24 +652,33 @@ await prisma.testStepExecution.deleteMany({
 router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
+  const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     const id = Number(req.params.id);
     const { includeAttachments } = req.body;
 
     // Get old test case
-    const oldCase = await prisma.testCase.findUnique({
-      where: { id },
-      include: {
-        steps: true,
-        attachments: true,
-      },
-    });
+const oldCase = await prisma.testCase.findFirst({
+  where: {
+    id,
+    projectId
+  },
+  include: {
+    steps: true,
+    attachments: true,
+  },
+});
 
     if (!oldCase) {
       return res.status(404).json({ msg: "Test case not found" });
     }
 
     // Generate new TestCaseId
-    const newTcId = await generateTCId();
+   const newTcId = await generateTCId(projectId);
 
 
     const cloned = await prisma.testCase.create({
@@ -666,6 +709,7 @@ router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
         expected: oldCase.expected,
         version: 1,
         userId: req.user.id,
+        projectId,
 
         // Clone Steps
         steps: {
@@ -711,14 +755,17 @@ router.post("/clone/:id", auth, role(["tester", "admin"]), async (req, res) => {
 router.delete("/:id", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
-    await prisma.testCase.update({
-      where: {
-        id: Number(req.params.id),
-      },
-      data: {
-        isDeleted: true, // SOFT DELETE
-      },
-    });
+    const projectId = Number(req.headers["x-project-id"]);
+
+await prisma.testCase.updateMany({
+  where: {
+    id: Number(req.params.id),
+    projectId
+  },
+  data: {
+    isDeleted: true,
+  },
+});
 
     res.json({ msg: "Deleted successfully" });
 
@@ -731,6 +778,19 @@ router.delete("/:id", auth, role(["tester", "admin"]), async (req, res) => {
 router.get("/:id/history", auth, role(["tester", "admin"]), async (req, res) => {
 
   try {
+
+    const projectId = Number(req.headers["x-project-id"]);
+
+const testCase = await prisma.testCase.findFirst({
+  where: {
+    id: Number(req.params.id),
+    projectId
+  }
+});
+
+if (!testCase) {
+  return res.status(404).json({ msg: "Not found in this project" });
+}
 
     const history = await prisma.testCaseVersion.findMany({
       where: {
@@ -770,9 +830,14 @@ router.put("/:id/restore", auth, role(["admin"]), async (req, res) => {
 
     const id = Number(req.params.id);
 
-    const existing = await prisma.testCase.findUnique({
-      where: { id }
-    });
+    const projectId = Number(req.headers["x-project-id"]);
+
+const existing = await prisma.testCase.findFirst({
+  where: {
+    id,
+    projectId
+  }
+});
 
     if (!existing) {
       return res.status(404).json({
@@ -808,9 +873,14 @@ router.delete("/:id/permanent", auth, role(["admin"]), async (req, res) => {
 
     const id = Number(req.params.id);
 
-    const existing = await prisma.testCase.findUnique({
-      where: { id }
-    });
+    const projectId = Number(req.headers["x-project-id"]);
+
+const existing = await prisma.testCase.findFirst({
+  where: {
+    id,
+    projectId
+  }
+});
 
     if (!existing) {
       return res.status(404).json({
@@ -818,7 +888,7 @@ router.delete("/:id/permanent", auth, role(["admin"]), async (req, res) => {
       });
     }
 
-// First delete step executions
+// Delete step executions
 await prisma.testStepExecution.deleteMany({
   where: {
     testStep: {
@@ -827,20 +897,23 @@ await prisma.testStepExecution.deleteMany({
   },
 });
 
-// Then delete steps
+// Delete steps
 await prisma.testStep.deleteMany({
   where: { testCaseId: id },
 });
 
-    // Delete versions
-    await prisma.testCaseVersion.deleteMany({
-      where: { testCaseId: id }
-    });
+// Delete versions
+await prisma.testCaseVersion.deleteMany({
+  where: { testCaseId: id },
+});
 
-    // Delete test case
-    await prisma.testCase.delete({
-      where: { id }
-    });
+// Finally delete test case safely
+await prisma.testCase.deleteMany({
+  where: {
+    id,
+    projectId
+  }
+});
 
     res.json({
       msg: "Test case permanently deleted"
@@ -1011,6 +1084,8 @@ router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async
 
   try {
 
+    const projectId = Number(req.headers["x-project-id"]);
+
     const templateId = Number(req.params.templateId);
 
     const template = await prisma.testCaseTemplate.findUnique({
@@ -1025,7 +1100,9 @@ router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async
 
     const data = template.templateData;
 
-    const count = await prisma.testCase.count();
+   const count = await prisma.testCase.count({
+  where: { projectId }
+});
 
     const year = new Date().getFullYear();
 
@@ -1075,6 +1152,7 @@ router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async
               notes: "",
             })),
           },
+          projectId,
         },
       });
 
@@ -1098,6 +1176,8 @@ router.post("/templates/use/:templateId", auth, role(["tester", "admin"]), async
 router.post("/bulk/delete", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
+    const projectId = Number(req.headers["x-project-id"]);
+
     const { ids } = req.body;
 
     if (!ids || ids.length === 0) {
@@ -1107,10 +1187,11 @@ router.post("/bulk/delete", auth, role(["tester", "admin"]), async (req, res) =>
     }
 
     await prisma.testCase.updateMany({
-  where: {
-    id: { in: ids },
-    ...(req.user.role !== "admin" && { userId: req.user.id }),
-  },
+      where: {
+  id: { in: ids },
+  projectId,
+  ...(req.user.role !== "admin" && { userId: req.user.id }),
+},
   data: {
     isDeleted: true,
   },
@@ -1144,9 +1225,12 @@ router.post("/bulk/status", auth, role(["tester", "admin"]), async (req, res) =>
       });
     }
 
-    await prisma.testCase.updateMany({
+const projectId = Number(req.headers["x-project-id"]);
+
+await prisma.testCase.updateMany({
   where: {
     id: { in: ids },
+    projectId,
     ...(req.user.role !== "admin" && { userId: req.user.id }),
   },
   data: {
@@ -1174,14 +1258,16 @@ const { Parser } = require("json2csv");
 router.post("/bulk/export", auth, role(["tester", "admin"]), async (req, res) => {
   try {
 
+    const projectId = Number(req.headers["x-project-id"]);
     const { ids } = req.body;
 
     const testCases = await prisma.testCase.findMany({
-      where: {
-        id: { in: ids },
-        isDeleted: false,
-        ...(req.user.role !== "admin" && { userId: req.user.id }),
-      },
+     where: {
+  id: { in: ids },
+  projectId,
+  isDeleted: false,
+  ...(req.user.role !== "admin" && { userId: req.user.id }),
+},
     });
 
     if (!testCases || testCases.length === 0) {
@@ -1198,6 +1284,7 @@ router.post("/bulk/export", auth, role(["tester", "admin"]), async (req, res) =>
       "Severity",
       "Status",
       "CreatedAt"
+      
     ];
 
     const parser = new Parser({ fields });
@@ -1224,6 +1311,5 @@ router.post("/bulk/export", auth, role(["tester", "admin"]), async (req, res) =>
     res.status(500).json({ msg: "Export failed" });
   }
 });
-
 
  module.exports = router;

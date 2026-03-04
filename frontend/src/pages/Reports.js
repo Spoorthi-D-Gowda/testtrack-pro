@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function Reports({ reportTab }) {
@@ -23,7 +23,7 @@ const fetchReport = useCallback(async () => {
   try {
     setLoadingExecution(true);
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/reports/execution",
       {
         headers: { "x-auth-token": token },
@@ -43,7 +43,7 @@ const fetchBugReport = useCallback(async () => {
   try {
     setLoadingBug(true);
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/reports/bugs",
       {
         headers: { "x-auth-token": token },
@@ -63,7 +63,7 @@ const fetchDevReport = useCallback(async () => {
   try {
     setLoadingDev(true);
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/reports/developer-performance",
       { headers: { "x-auth-token": token } }
     );
@@ -81,7 +81,7 @@ const fetchTesterReport = useCallback(async () => {
   try {
     setLoadingTester(true);
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/reports/tester-performance",
       { headers: { "x-auth-token": token } }
     );
@@ -108,7 +108,7 @@ const handleExport = async (type) => {
 
     const reportType = endpointMap[reportTab];
 
-    const res = await axios.get(
+    const res = await api.get(
       `http://localhost:5000/api/export/${reportType}/${type}`,
       {
         headers: { "x-auth-token": token },

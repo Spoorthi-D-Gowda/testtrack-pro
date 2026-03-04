@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
 import TestCasesManager from "./TestCases";
@@ -14,6 +14,8 @@ import { useLocation } from "react-router-dom";
 import ChangePassword from "./ChangePassword";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
+import CreateProject from "./CreateProject";
+import MyAssignedProjects from "./MyAssignedProjects";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -24,7 +26,10 @@ export default function Dashboard() {
   const [selectedSuiteExecutionId, setSelectedSuiteExecutionId] = useState(null);
   const [showReportsMenu, setShowReportsMenu] = useState(false);
 const [reportTab, setReportTab] = useState("execution");
-
+const [projects, setProjects] = useState([]);
+const [selectedProject, setSelectedProject] = useState(
+  localStorage.getItem("projectId") || ""
+);
   const navigate = useNavigate();
 
   const role =
@@ -52,6 +57,30 @@ const logout = useCallback(() => {
   const location = useLocation();
 
 useEffect(() => {
+  const fetchProjects = async () => {
+    const token =
+      localStorage.getItem("accessToken") ||
+      sessionStorage.getItem("accessToken");
+
+    const res = await api.get(
+      "http://localhost:5000/api/projects",
+      {
+        headers: { "x-auth-token": token },
+      }
+    );
+
+    setProjects(res.data);
+
+    if (!selectedProject && res.data.length > 0) {
+      setSelectedProject(res.data[0].id);
+      localStorage.setItem("projectId", res.data[0].id);
+    }
+  };
+
+  fetchProjects();
+}, []);
+
+useEffect(() => {
   if (location.state?.activeSection) {
     setActiveSection(location.state.activeSection);
   }
@@ -75,7 +104,7 @@ useEffect(() => {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/profile",
         {
           headers: { "x-auth-token": token },
@@ -104,7 +133,7 @@ useEffect(() => {
 
   if (!token) return;
 
-  axios
+  api
     .get("http://localhost:5000/api/dashboard/stats", {
       headers: { "x-auth-token": token }
     })
@@ -122,7 +151,7 @@ useEffect(() => {
 
       if (!token) return;
 
-      await axios.get("http://localhost:5000/api/profile", {
+      await api.get("http://localhost:5000/api/profile", {
         headers: { "x-auth-token": token },
       });
 
@@ -155,6 +184,7 @@ useEffect(() => {
 >
   Dashboard
 </button>
+
 
         {(role === "tester" || role === "admin") && (
           <div>
@@ -212,6 +242,28 @@ useEffect(() => {
 )}
 </div>
         )}
+  {role === "tester" && (
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setActiveSection("assignedProjects");
+      setTestCaseTab(null);
+    }}
+  >
+    My Assigned Projects
+  </button>
+)}
+{role === "admin" && (
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setActiveSection("assignedProjects");
+      setTestCaseTab(null);
+    }}
+  >
+    Ongoing Projects
+  </button>
+)}
 
 {(role === "tester" || role === "admin") && (
   <button
@@ -358,7 +410,7 @@ useEffect(() => {
         localStorage.getItem("accessToken") ||
         sessionStorage.getItem("accessToken");
 
-      await axios.post(
+      await api.post(
         "http://localhost:5000/api/auth/logout-all",
         {},
         {
@@ -501,7 +553,7 @@ useEffect(() => {
   <div className="dashboard-header">
     <h2>Dashboard</h2>
 
-    {(role === "tester" || role === "admin") && (
+    {role === "tester" && (
       <button
         className="add-btn"
         onClick={() => {
@@ -512,6 +564,16 @@ useEffect(() => {
         + Add Test Case
       </button>
     )}
+    {role === "admin" && (
+  <button
+    className="add-btn"
+    onClick={() => {
+      setActiveSection("projects");
+    }}
+  >
+    + Add Project
+  </button>
+)}
   </div>
 
   {stats && (
@@ -545,45 +607,34 @@ useEffect(() => {
 
       {/* ===== ANALYSIS + USERS ===== */}
       <div className="middle-section">
+{role === "admin" && (
+  <div
+    style={{
+      background: "#e6f6ff",
+      padding: "20px",
+      borderRadius: "12px",
+      minHeight: "200px"
+    }}
+  >
+    <h3>Projects</h3>
 
-        {/* Project Analysis */}
-        <div className="widget-card large">
-  <h3>Project Analytics</h3>
-
-  <div className="analytics-bars">
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.passedTestCases * 5}px` }}
-      />
-      <span>Passed</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.failedTestCases * 5}px` }}
-      />
-      <span>Failed</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.blockedTestCases * 5}px` }}
-      />
-      <span>Blocked</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.skippedTestCases * 5}px` }}
-      />
-      <span>Skipped</span>
+{projects.map((p) => (
+  <div
+    key={p.id}
+    style={{
+      padding: "12px",
+      borderBottom: "1px solid #cce5ff"
+    }}
+  >
+    <div style={{ fontWeight: "bold" }}>
+      {p.name}
     </div>
   </div>
-</div>
+))}
+
+  </div>
+)}
+ 
        {/* Testers */}
 <div className="widget-card">
   <h3>Testers</h3>
@@ -623,6 +674,45 @@ useEffect(() => {
     </ul>
   </div> 
 )}
+
+       {/* Project Analysis */}
+        <div className="widget-card large">
+  <h3>Project Analytics</h3>
+
+  <div className="analytics-bars">
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.passedTestCases * 5}px` }}
+      />
+      <span>Passed</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.failedTestCases * 5}px` }}
+      />
+      <span>Failed</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.blockedTestCases * 5}px` }}
+      />
+      <span>Blocked</span>
+    </div>
+
+    <div className="bar">
+      <div
+        className="bar-fill"
+        style={{ height: `${stats.skippedTestCases * 5}px` }}
+      />
+      <span>Skipped</span>
+    </div>
+  </div>
+</div>
 
      </div>
       </>
@@ -680,7 +770,15 @@ useEffect(() => {
 {activeSection === "changePassword" && (
   <ChangePassword />
 )}
-
+{activeSection === "projects" && (
+  <CreateProject />
+)}
+{activeSection === "assignedProjects" && (
+  <MyAssignedProjects
+    setActiveSection={setActiveSection}
+    setTestCaseTab={setTestCaseTab}
+  />
+)}
 </div>
 
     </div>

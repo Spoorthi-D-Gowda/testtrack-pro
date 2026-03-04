@@ -16,6 +16,11 @@ router.post(
   auth,
   role(["admin"]),
   async (req, res) => {
+
+    const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
     try {
       const {
         name,
@@ -23,7 +28,7 @@ router.post(
         startDate,
         endDate,
         testerIds,
-        testCaseIds,
+        testCaseIds, 
       } = req.body;
 
       if (!name || !startDate || !endDate) {
@@ -32,6 +37,38 @@ router.post(
         });
       }
 
+if (testerIds && testerIds.length > 0) {
+  const validTesters = await prisma.user.findMany({
+    where: {
+      id: { in: testerIds },
+      role: "tester"
+    },
+    select: { id: true }
+  });
+
+  if (validTesters.length !== testerIds.length) {
+    return res.status(400).json({
+      msg: "Invalid tester IDs"
+    });
+  }
+}
+
+      if (testCaseIds && testCaseIds.length > 0) {
+  const validCases = await prisma.testCase.findMany({
+    where: {
+      id: { in: testCaseIds },
+      projectId
+    },
+    select: { id: true }
+  });
+
+  if (validCases.length !== testCaseIds.length) {
+    return res.status(400).json({
+      msg: "Some test cases do not belong to this project"
+    });
+  }
+}
+
       const testRun = await prisma.testRun.create({
         data: {
           name,
@@ -39,6 +76,7 @@ router.post(
           startDate: new Date(startDate),
           endDate: new Date(endDate),
           createdById: req.user.id,
+          projectId, 
           assignments: testerIds
             ? {
                 create: testerIds.map((id) => ({
@@ -79,13 +117,38 @@ router.post(
   auth,
   role(["admin"]),
   async (req, res) => {
+
+const runId = Number(req.params.runId);
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+const run = await prisma.testRun.findFirst({
+  where: { id: runId, projectId }
+});
+
+if (!run) {
+  return res.status(404).json({ msg: "Run not found in this project" });
+}
     try {
-      const runId = Number(req.params.runId);
       const { testerId } = req.body;
 
       if (!testerId) {
         return res.status(400).json({ msg: "Tester ID required" });
       }
+
+const existing = await prisma.testRunAssignment.findFirst({
+  where: {
+    testRunId: runId,
+    testerId
+  }
+});
+
+if (existing) {
+  return res.status(400).json({
+    msg: "Tester already assigned to this run"
+  });
+}
 
       const assignment = await prisma.testRunAssignment.create({
         data: {
@@ -116,8 +179,22 @@ router.get(
   "/:runId/progress",
   auth,
   async (req, res) => {
+
+const runId = Number(req.params.runId);
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+const run = await prisma.testRun.findFirst({
+  where: { id: runId, projectId }
+});
+
+if (!run) {
+  return res.status(404).json({ msg: "Run not found in this project" });
+}
+
     try {
-      const runId = Number(req.params.runId);
+     
 
       // 1️⃣ Total assigned test cases
       const total = await prisma.testRunTestCase.count({
@@ -169,11 +246,17 @@ router.get(
 router.get("/", auth, async (req, res) => {
   try {
 
+    const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     let runs;
 
     if (req.user.role === "admin") {
       // Admin sees all runs
       runs = await prisma.testRun.findMany({
+  where: { projectId },
   include: {
     assignments: {
       include: {
@@ -195,7 +278,8 @@ router.get("/", auth, async (req, res) => {
     } else if (req.user.role === "tester") {
       // Tester sees only assigned runs
       runs = await prisma.testRun.findMany({
-        where: {
+  where: {
+    projectId,
           assignments: {
             some: {
               testerId: req.user.id,
@@ -231,7 +315,19 @@ router.get("/", auth, async (req, res) => {
 });
 
 router.get("/:runId/testcases", auth, async (req, res) => {
-  const runId = Number(req.params.runId);
+const runId = Number(req.params.runId);
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const run = await prisma.testRun.findFirst({
+  where: { id: runId, projectId }
+});
+
+if (!run) {
+  return res.status(404).json({ msg: "Run not found in this project" });
+}
 
   const runCases = await prisma.testRunTestCase.findMany({
     where: { testRunId: runId },

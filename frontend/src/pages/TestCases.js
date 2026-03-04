@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
@@ -61,7 +61,7 @@ const fetchTemplates = useCallback(async () => {
 
   try {
 
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/testcases/templates/all",
       {
         headers: {
@@ -112,14 +112,14 @@ const removeStep = (index) => {
 const fetchCases = useCallback(async () => {
   try {
 
-    const activeRes = await axios.get(
+    const activeRes = await api.get(
       `http://localhost:5000/api/testcases?title=${search}`,
       {
         headers: { "x-auth-token": token },
       }
     );
 
-    const deletedRes = await axios.get(
+    const deletedRes = await api.get(
       `http://localhost:5000/api/testcases?deleted=true&title=${search}`,
       {
         headers: { "x-auth-token": token },
@@ -177,7 +177,7 @@ selectedFiles.forEach(file => {
   formData.append("attachments", file);
 });
 
-res = await axios.put(
+res = await api.put(
   `http://localhost:5000/api/testcases/${editId}`,
   formData,
   {
@@ -196,7 +196,7 @@ setTestCaseTab("view");
 
     } else {
       // CREATE
-      res = await axios.post(
+      res = await api.post(
         "http://localhost:5000/api/testcases",
         {
           title,
@@ -273,7 +273,7 @@ setTestCaseTab("view");
   // ================= DELETE =================
 const deleteCase = async (id) => {
   try {
-    const res = await axios.delete(
+    const res = await api.delete(
       `http://localhost:5000/api/testcases/${id}`,
       {
         headers: {
@@ -302,7 +302,7 @@ const deleteCase = async (id) => {
   // ================= CLONE =================
 const cloneCase = async (id, includeAttachments) => {
   try {
-    await axios.post(
+    await api.post(
       `http://localhost:5000/api/testcases/clone/${id}`,
       { includeAttachments },
       {
@@ -338,7 +338,7 @@ const selectAllCases = () => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       `http://localhost:5000/api/testcases/templates/use/${templateId}`,
       {},
       {
@@ -368,7 +368,7 @@ const selectAllCases = () => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       `http://localhost:5000/api/testcases/${id}/template`,
       {},
       {
@@ -396,7 +396,7 @@ const updateStepExecution = async (stepId, stepData) => {
 
   try {
 
-    const res = await axios.put(
+    const res = await api.put(
 
       `http://localhost:5000/api/testcases/step/${stepId}`,
 
@@ -499,7 +499,7 @@ setTestCaseTab("create");
 const fetchHistory = async (id) => {
   try {
 
-    const res = await axios.get(
+    const res = await api.get(
       `http://localhost:5000/api/testcases/${id}/history`,
       {
         headers: {
@@ -530,7 +530,7 @@ const fetchHistory = async (id) => {
   }
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       "http://localhost:5000/api/testcases/bulk/delete",
       { ids: selectedCases },
       {
@@ -566,7 +566,7 @@ const bulkStatusUpdate = async (status) => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       "http://localhost:5000/api/testcases/bulk/status",
       {
         ids: selectedCases,
@@ -605,7 +605,7 @@ const bulkExport = async () => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       "http://localhost:5000/api/testcases/bulk/export",
       { ids: selectedCases },
       {
@@ -656,7 +656,7 @@ const confirmImport = async () => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       "http://localhost:5000/api/testcases/import",
       formData,
       {
@@ -704,7 +704,7 @@ const previewImport = async () => {
 
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       "http://localhost:5000/api/testcases/import/preview",
       formData,
       {
@@ -735,7 +735,7 @@ const restoreCase = async (id) => {
 
   try {
 
-    const res = await axios.put(
+    const res = await api.put(
       `http://localhost:5000/api/testcases/${id}/restore`,
       {},
       {
@@ -764,10 +764,12 @@ const permanentDelete = async (id) => {
 
   try {
 
-    const res = await axios.delete(
+    const res = await api.delete(
       `http://localhost:5000/api/testcases/${id}/permanent`,
       {
-        headers: { "x-auth-token": token }
+        headers: { "x-auth-token": token 
+          
+        }
       }
     );
 
@@ -792,7 +794,7 @@ const uploadAttachment = async (id, file) => {
   formData.append("file", file);
 
   try {
-    await axios.post(
+    await api.post(
       `http://localhost:5000/api/testcases/${id}/upload`,
       formData,
       {
@@ -827,8 +829,6 @@ return (
           Editing Mode: Update the test case
         </p>
       )}
-
-      {/* ================= CREATE TAB ================= */}
           {/* ================= CREATE TAB ================= */}
 {activeTab === "create" && (
   <form onSubmit={addCase}>

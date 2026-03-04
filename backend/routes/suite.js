@@ -15,6 +15,12 @@ FR-TS-001: CREATE TEST SUITE
 // CREATE SUITE
 router.post("/", auth, role(["tester", "admin"]), async (req, res) => {
   try {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     if (!req.body) {
   return res.status(400).json({ msg: "Request body missing" });
 }
@@ -32,18 +38,32 @@ const { name, description, module, parentId, testCaseIds } = req.body;
     module,
     parentId: parentId ? Number(parentId) : null,
     createdById: req.user.id,
+    projectId, 
   },
 });
 
 if (testCaseIds && Array.isArray(testCaseIds) && testCaseIds.length > 0) {
 
-  await prisma.suiteTestCase.createMany({
-    data: testCaseIds.map((id, index) => ({
-      suiteId: suite.id,
-      testCaseId: id,
-      order: index + 1,
-    })),
+const validTestCases = await prisma.testCase.findMany({
+  where: {
+    id: { in: testCaseIds },
+    projectId
+  },
+  select: { id: true }
+});
+
+if (validTestCases.length !== testCaseIds.length) {
+  return res.status(400).json({
+    msg: "Some test cases do not belong to this project"
   });
+}
+await prisma.suiteTestCase.createMany({
+  data: testCaseIds.map((id, index) => ({
+    suiteId: suite.id,
+    testCaseId: id,
+    order: index + 1,
+  })),
+});
 
 }
 
@@ -59,12 +79,19 @@ if (testCaseIds && Array.isArray(testCaseIds) && testCaseIds.length > 0) {
 });
 router.get("/", auth, role(["tester", "admin"]), async (req, res) => {
   try {
+
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     const userRole = req.user?.role;
 
     const suites = await prisma.testSuite.findMany({
-      where: userRole === "admin"
-        ? {}
-        : { isArchived: false },
+      where: {
+    projectId,
+    ...(userRole !== "admin" && { isArchived: false }),
+  },
       include: {
         children: true,
         parent: true,
@@ -94,9 +121,30 @@ router.post("/:suiteId/add", auth, role(["tester", "admin"]), async (req, res) =
   try {
     const suiteId = Number(req.params.suiteId);
     const { testCaseId } = req.body;
+    const projectId = Number(req.headers["x-project-id"]);
+
+    if (!projectId) {
+      return res.status(400).json({ msg: "Project ID required" });
+    }
 
     if (!testCaseId) {
       return res.status(400).json({ msg: "Test case ID required" });
+    }
+
+    const suite = await prisma.testSuite.findFirst({
+      where: { id: suiteId, projectId }
+    });
+
+    if (!suite) {
+      return res.status(404).json({ msg: "Suite not found in this project" });
+    }
+
+    const testCase = await prisma.testCase.findFirst({
+      where: { id: testCaseId, projectId }
+    });
+
+    if (!testCase) {
+      return res.status(404).json({ msg: "Test case not found in this project" });
     }
 
     const count = await prisma.suiteTestCase.count({
@@ -127,6 +175,22 @@ router.delete(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+  const projectId = Number(req.headers["x-project-id"]);
+    if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const suiteId = Number(req.params.suiteId);
+
+const suite = await prisma.testSuite.findFirst({
+  where: { id: suiteId, projectId }
+});
+
+if (!suite) {
+  return res.status(404).json({ msg: "Suite not found in this project" });
+}
+
     try {
       const suiteTestCaseId = Number(req.params.suiteTestCaseId);
 
@@ -147,6 +211,20 @@ router.put(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+    const projectId = Number(req.headers["x-project-id"]);
+const suiteId = Number(req.params.suiteId);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const suite = await prisma.testSuite.findFirst({
+  where: { id: suiteId, projectId }
+});
+
+if (!suite) {
+  return res.status(404).json({ msg: "Suite not found in this project" });
+}
     try {
       const { items } = req.body;
 
@@ -173,10 +251,15 @@ router.post(
   role(["tester", "admin"]),
   async (req, res) => {
     try {
+const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
       const suiteId = Number(req.params.suiteId);
 
-      const original = await prisma.testSuite.findUnique({
-        where: { id: suiteId },
+      const original = await prisma.testSuite.findFirst({
+        where: { id: suiteId, projectId },
         include: { testCases: true },
       });
 
@@ -191,6 +274,7 @@ router.post(
           module: original.module,
           parentId: original.parentId,
           createdById: req.user.id,
+          projectId,
         },
       });
 
@@ -226,8 +310,13 @@ router.post(
       const suiteId = Number(req.params.suiteId);
       const { mode } = req.body; // "sequential" or "parallel"
 
-      const suite = await prisma.testSuite.findUnique({
-        where: { id: suiteId },
+      const projectId = Number(req.headers["x-project-id"]);
+      if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const suite = await prisma.testSuite.findFirst({
+  where: { id: suiteId, projectId },
         include: {
           testCases: {
             include: { testCase: true },
@@ -291,24 +380,34 @@ router.post(
 );
 // ARCHIVE SUITE
 router.put("/:suiteId/archive", auth, role(["tester", "admin"]), async (req, res) => {
+
+  const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
   const suiteId = Number(req.params.suiteId);
 
-  await prisma.testSuite.update({
-    where: { id: suiteId },
-    data: { isArchived: true },
-  });
+await prisma.testSuite.updateMany({
+  where: { id: suiteId, projectId },
+  data: { isArchived: true },
+});
 
   res.json({ msg: "Suite archived" });
 });
 
 // RESTORE SUITE
 router.put("/:suiteId/restore", auth, role(["admin"]), async (req, res) => {
+
+  const projectId = Number(req.headers["x-project-id"]);
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
   const suiteId = Number(req.params.suiteId);
 
-  await prisma.testSuite.update({
-    where: { id: suiteId },
-    data: { isArchived: false },
-  });
+await prisma.testSuite.updateMany({
+  where: { id: suiteId, projectId },
+  data: { isArchived: false },
+});
 
   res.json({ msg: "Suite restored" });
 });
@@ -319,20 +418,26 @@ router.get(
   async (req, res) => {
     const id = Number(req.params.suiteExecutionId);
 
-    const suiteExecution =
-      await prisma.suiteExecution.findUnique({
-        where: { id },
-        include: {
-          executions: {
-            include: {
-              testCase: true,
-            },
-            orderBy: {
-              id: "asc",   // 🔥 IMPORTANT
-            },
-          },
-        },
-      });
+   const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
+const suiteExecution = await prisma.suiteExecution.findFirst({
+  where: {
+    id,
+    suite: { projectId }
+  },
+  include: {
+    executions: {
+      include: {
+        testCase: true,
+      },
+      orderBy: { id: "asc" },
+    },
+  },
+});
       if (!suiteExecution) {
   return res.status(404).json({
     msg: "Suite execution not found"
@@ -347,8 +452,26 @@ router.get(
   auth,
   role(["tester", "admin"]),
   async (req, res) => {
+
+    const id = Number(req.params.suiteExecutionId);
+    const projectId = Number(req.headers["x-project-id"]);
+
+    if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
+
     try {
-      const id = Number(req.params.suiteExecutionId);
+
+const suiteExecution = await prisma.suiteExecution.findFirst({
+  where: {
+    id,
+    suite: { projectId }
+  }
+});
+
+if (!suiteExecution) {
+  return res.status(404).json({ msg: "Not found in this project" });
+}
 
       const executions = await prisma.testExecution.findMany({
         where: { suiteExecutionId: id },
