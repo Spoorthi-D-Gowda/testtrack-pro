@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function ExecutionHistory({
@@ -25,7 +25,7 @@ const formatTime = (seconds) => {
 
   const fetchExecutions = async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/executions",
         {
           headers: { "x-auth-token": token },
@@ -39,7 +39,7 @@ const formatTime = (seconds) => {
 
   const fetchExecutionDetails = async (id) => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         `http://localhost:5000/api/executions/${id}`,
         {
           headers: { "x-auth-token": token },

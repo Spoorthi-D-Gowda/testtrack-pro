@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function Bugs({ type }) {
@@ -24,10 +24,13 @@ const [sortBy, setSortBy] = useState("");
   // ================= FETCH BUGS =================
 const fetchBugs = async () => {
   try {
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/bugs",
       {
-        headers: { "x-auth-token": token },
+        headers: {
+  "x-auth-token": token,
+  "x-project-id": localStorage.getItem("projectId")
+},
          params: {
           priority: filterPriority || undefined,
           severity: filterSeverity || undefined,
@@ -51,7 +54,7 @@ const fetchBugs = async () => {
   // ================= FETCH DEVELOPERS =================
 const fetchDevelopers = async () => {
   try {
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/auth/users",
       {
         headers: { "x-auth-token": token },
@@ -90,13 +93,16 @@ useEffect(() => {
   // ================= ASSIGN BUG =================
   const assignBug = async () => {
     try {
-      await axios.put(
-        `http://localhost:5000/api/bugs/assign/${selectedBugId}`,
-        { developerId: Number(selectedDeveloper) },
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+      await api.put(
+  `http://localhost:5000/api/bugs/assign/${selectedBugId}`,
+  { developerId: Number(selectedDeveloper) },
+  {
+    headers: {
+      "x-auth-token": token,
+      "x-project-id": localStorage.getItem("projectId")
+    },
+  }
+);
 
       alert("Bug assigned successfully");
 
@@ -111,12 +117,16 @@ useEffect(() => {
   };
 const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) => {
   try {
-    const res = await axios.put(
-      `http://localhost:5000/api/bugs/status/${id}`,
-      { status, fixNotes, commitLink, rejectionReason },
-      { headers: { "x-auth-token": token } }
-    );
-
+    const res =await api.put(
+  `http://localhost:5000/api/bugs/status/${id}`,
+  { status, fixNotes, commitLink, rejectionReason },
+  {
+    headers: {
+      "x-auth-token": token,
+      "x-project-id": localStorage.getItem("projectId")
+    }
+  }
+);
     alert(res.data.msg);
     fetchBugs();
 

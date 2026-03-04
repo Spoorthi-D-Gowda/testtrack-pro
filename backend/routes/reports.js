@@ -18,20 +18,32 @@ router.get(
   auth,
   role(["admin", "tester"]),
   async (req, res) => {
+    const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
     try {
 
       // ==========================
       // 1️⃣ TOTAL EXECUTED
       // ==========================
-      const totalExecuted = await prisma.testExecution.count();
+      const totalExecuted = await prisma.testExecution.count({
+  where: {
+    testCase: { projectId }
+  }
+});
 
       // ==========================
       // 2️⃣ STATUS BREAKDOWN
       // ==========================
-      const breakdown = await prisma.testExecution.groupBy({
-        by: ["status"],
-        _count: { status: true }
-      });
+     const breakdown = await prisma.testExecution.groupBy({
+  by: ["status"],
+  where: {
+    testCase: { projectId }
+  },
+  _count: { status: true }
+});
 
       let passCount = 0;
       let failCount = 0;
@@ -54,7 +66,10 @@ router.get(
       // 3️⃣ FAILED TEST CASE DETAILS
       // ==========================
       const failedCases = await prisma.testExecution.findMany({
-        where: { status: "Fail" },
+       where: {
+  status: "Fail",
+  testCase: { projectId }
+},
         include: {
           testCase: true,
           tester: { select: { name: true } }
@@ -66,9 +81,12 @@ router.get(
       // 4️⃣ EXECUTION BY TESTER
       // ==========================
       const testerStats = await prisma.testExecution.groupBy({
-        by: ["testerId"],
-        _count: true
-      });
+  by: ["testerId"],
+  where: {
+    testCase: { projectId }
+  },
+  _count: true
+});
 
       const testerDetails = await Promise.all(
         testerStats.map(async (t) => {
@@ -89,6 +107,9 @@ router.get(
 // ==========================
 
 const executions = await prisma.testExecution.findMany({
+  where: {
+    testCase: { projectId }
+  },
   include: { testCase: true }
 });
 
@@ -161,6 +182,11 @@ router.get(
   auth,
   role(["admin", "tester"]),
   async (req, res) => {
+    const projectId = Number(req.headers["x-project-id"]);
+
+if (!projectId) {
+  return res.status(400).json({ msg: "Project ID required" });
+}
     try {
 
       const testers = await prisma.user.findMany({
@@ -172,7 +198,10 @@ router.get(
 
           // Total executions
           const executions = await prisma.testExecution.findMany({
-            where: { testerId: tester.id }
+           where: {
+  testerId: tester.id,
+  testCase: { projectId }
+}
           });
 
           const totalExecuted = executions.length;
@@ -191,7 +220,10 @@ router.get(
 
           // Bugs created (detected)
           const bugsDetected = await prisma.bug.count({
-  where: { reportedById: tester.id }
+  where: {
+  reportedById: tester.id,
+  projectId
+}
 });
 
           // Detection rate

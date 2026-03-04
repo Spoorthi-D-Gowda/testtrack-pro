@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function SuiteExecution({ suiteExecutionId }) {
@@ -16,7 +16,7 @@ useEffect(() => {
 
   const fetchSuiteExecution = async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         `http://localhost:5000/api/suites/execution/${suiteExecutionId}`,
         { headers: { "x-auth-token": token } }
       );

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function TestSuites({
@@ -29,14 +29,14 @@ const archivedSuites = suites.filter(s => s.isArchived);
 
   // ================= FETCH =================
 const fetchSuites = useCallback(async () => {
-  const res = await axios.get("http://localhost:5000/api/suites", {
+  const res = await api.get("http://localhost:5000/api/suites", {
     headers: { "x-auth-token": token },
   });
   setSuites(res.data);
 }, [token]);
 
 const fetchTestCases = useCallback(async () => {
-  const res = await axios.get(
+  const res = await api.get(
     "http://localhost:5000/api/testcases",
     { headers: { "x-auth-token": token } }
   );
@@ -52,7 +52,7 @@ useEffect(() => {
   const createSuite = async (e) => {
     e.preventDefault();
 
-    await axios.post(
+    await api.post(
   "http://localhost:5000/api/suites",
   {
     name,
@@ -75,7 +75,7 @@ useEffect(() => {
 
   const executeSuite = async (mode) => {
   try {
-    const res = await axios.post(
+    const res = await api.post(
       `http://localhost:5000/api/suites/${selectedSuite.id}/execute`,
       { mode },
       { headers: { "x-auth-token": token } }
@@ -131,7 +131,7 @@ const renderSuiteTree = (parentId = null, level = 0) => {
 const addTestCaseToSuite = async () => {
   if (!newTestCaseId) return;
 
-  await axios.post(
+  await api.post(
     `http://localhost:5000/api/suites/${selectedSuite.id}/add`,
     { testCaseId: Number(newTestCaseId) },
     { headers: { "x-auth-token": token } }
@@ -142,12 +142,12 @@ const addTestCaseToSuite = async () => {
 };
 
 const removeTestCase = async (testCaseId) => {
-  await axios.delete(
+  await api.delete(
     `http://localhost:5000/api/suites/${selectedSuite.id}/remove/${testCaseId}`,
     { headers: { "x-auth-token": token } }
   );
 
-const res = await axios.get("http://localhost:5000/api/suites", {
+const res = await api.get("http://localhost:5000/api/suites", {
   headers: { "x-auth-token": token },
 });
 
@@ -181,14 +181,14 @@ const reorder = async (id, direction) => {
     order: idx + 1,
   }));
 
-  await axios.put(
+  await api.put(
     `http://localhost:5000/api/suites/${selectedSuite.id}/reorder`,
     { items: updated },
     { headers: { "x-auth-token": token } }
   );
 
   // 🔥 REFRESH AND UPDATE SELECTED SUITE
-  const res = await axios.get("http://localhost:5000/api/suites", {
+  const res = await api.get("http://localhost:5000/api/suites", {
     headers: { "x-auth-token": token },
   });
 
@@ -308,7 +308,7 @@ const reorder = async (id, direction) => {
                 className="primary-btn"
                 style={{ marginTop: "10px", width: "100%" }}
                 onClick={async () => {
-                  await axios.put(
+                  await api.put(
                     `http://localhost:5000/api/suites/${suite.id}/restore`,
                     {},
                     { headers: { "x-auth-token": token } }
@@ -406,7 +406,7 @@ const reorder = async (id, direction) => {
  <button
     className="popup-small-btn"
     onClick={async () => {
-      await axios.put(
+      await api.put(
         `http://localhost:5000/api/suites/${selectedSuite.id}/archive`,
         {},
         { headers: { "x-auth-token": token } }
@@ -421,7 +421,7 @@ const reorder = async (id, direction) => {
   <button
     className="popup-small-btn"
     onClick={async () => {
-      await axios.post(
+      await api.post(
         `http://localhost:5000/api/suites/${selectedSuite.id}/clone`,
         {},
         { headers: { "x-auth-token": token } }

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../api";
 import "../auth.css";
 
 export default function TestRuns() {
@@ -27,7 +27,7 @@ const role =
 
   const fetchTestCases = useCallback(async () => {
   try {
-    const res = await axios.get(
+    const res = await api.get(
       "http://localhost:5000/api/testcases",
       { headers: { "x-auth-token": token } }
     );
@@ -39,7 +39,7 @@ const role =
   // ================= FETCH USERS (TESTERS) =================
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/auth/users",
         {
           headers: { "x-auth-token": token },
@@ -54,7 +54,7 @@ const role =
   // ================= FETCH TEST RUNS =================
   const fetchRuns = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await api.get(
         "http://localhost:5000/api/testruns",
         {
           headers: { "x-auth-token": token },
@@ -77,7 +77,7 @@ useEffect(() => {
     e.preventDefault();
 
     try {
-      await axios.post(
+      await api.post(
         "http://localhost:5000/api/testruns",
         {
           name,
@@ -117,7 +117,7 @@ useEffect(() => {
 
   // ================= GET PROGRESS =================
   const getProgress = async (runId) => {
-    const res = await axios.get(
+    const res = await api.get(
       `http://localhost:5000/api/testruns/${runId}/progress`,
       {
         headers: { "x-auth-token": token },
@@ -128,7 +128,7 @@ useEffect(() => {
 
 const openRunCases = async (runId) => {
   try {
-    const res = await axios.get(
+    const res = await api.get(
       `http://localhost:5000/api/testruns/${runId}/testcases`,
       { headers: { "x-auth-token": token } }
     );

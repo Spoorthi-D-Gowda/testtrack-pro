@@ -63,6 +63,8 @@ model User {
   tokenVersion    Int                 @default(0)
   googleId        String?             @unique
   githubId        String?             @unique
+  projects        Project[]           @relation("CreatedProjects")
+  projectAssignments ProjectTester[]
 }
 
 model TestCase {
@@ -112,6 +114,8 @@ model TestCase {
   executions  TestExecution[]
   runs        TestRunTestCase[]
   bugs        Bug[]
+  projectId   Int
+  project     Project              @relation(fields: [projectId], references: [id])
 }
 
 model TestCaseVersion {
@@ -194,6 +198,8 @@ model TestSuite {
 
   testCases       SuiteTestCase[]
   suiteExecutions SuiteExecution[]
+  projectId  Int
+  project    Project @relation(fields: [projectId], references: [id])
 }
 
 model SuiteTestCase {
@@ -254,6 +260,8 @@ model TestRun {
   assignments TestRunAssignment[]
   executions  TestExecution[]
   testCases   TestRunTestCase[]
+  projectId Int
+  project   Project @relation(fields: [projectId], references: [id])
 }
 
 model TestRunAssignment {
@@ -325,6 +333,8 @@ model Bug {
   assignedTo User? @relation("AssignedBugs", fields: [assignedToId], references: [id])
 
   attachments BugAttachment[]
+  projectId   Int
+  project     Project @relation(fields: [projectId], references: [id])
 }
 
 model BugAttachment {
@@ -361,4 +371,34 @@ model PasswordHistory {
 
   user User @relation(fields: [userId], references: [id])
   @@index([userId])
+}
+model Project {
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
+  description String?
+  isActive    Boolean    @default(true)
+
+  createdById Int
+  createdBy   User @relation("CreatedProjects", fields: [createdById], references: [id])
+
+  testCases   TestCase[]
+  bugs        Bug[]
+  suites      TestSuite[]
+  testRuns    TestRun[]
+
+  createdAt   DateTime   @default(now())
+  testers     ProjectTester[]
+}
+model ProjectTester {
+  id        Int @id @default(autoincrement())
+
+  projectId Int
+  testerId  Int
+
+  project   Project @relation(fields: [projectId], references: [id])
+  tester    User    @relation(fields: [testerId], references: [id])
+
+  assignedAt DateTime @default(now())
+
+  @@unique([projectId, testerId])
 }
