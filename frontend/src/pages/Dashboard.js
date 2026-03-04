@@ -16,6 +16,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import CreateProject from "./CreateProject";
 import MyAssignedProjects from "./MyAssignedProjects";
+import ProjectSettings from "./ProjectSettings";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -395,6 +396,17 @@ useEffect(() => {
 
   </div>
 )}
+ {role === "admin" && (
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setActiveSection("projectSettings");
+      setTestCaseTab(null);
+    }}
+  >
+    Project Settings
+  </button>
+)}
 
         <button
           className="nav-btn logout-btn"
@@ -550,31 +562,63 @@ useEffect(() => {
         <div className="analytics-section">
 
   {/* TOP HEADER */}
-  <div className="dashboard-header">
-    <h2>Dashboard</h2>
+<div className="dashboard-header">
 
-    {role === "tester" && (
-      <button
-        className="add-btn"
-        onClick={() => {
-          setActiveSection("testcases");
-          setTestCaseTab("create");
-        }}
-      >
-        + Add Test Case
-      </button>
-    )}
-    {role === "admin" && (
-  <button
-    className="add-btn"
-    onClick={() => {
-      setActiveSection("projects");
-    }}
-  >
-    + Add Project
-  </button>
-)}
+  <h2>Dashboard</h2>
+
+  {/* PROJECT SELECTOR */}
+  <div className="project-selector">
+
+    <select
+      value={selectedProject}
+      onChange={(e) => {
+        const id = e.target.value;
+
+        setSelectedProject(id);
+        localStorage.setItem("projectId", id);
+
+        // refresh data for selected project
+        window.location.reload();
+      }}
+    >
+
+      <option value="">Select Project</option>
+
+      {projects.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
+      ))}
+
+    </select>
+
   </div>
+
+  {/* ACTION BUTTONS */}
+  {role === "tester" && (
+    <button
+      className="add-btn"
+      onClick={() => {
+        setActiveSection("testcases");
+        setTestCaseTab("create");
+      }}
+    >
+      + Add Test Case
+    </button>
+  )}
+
+  {role === "admin" && (
+    <button
+      className="add-btn"
+      onClick={() => {
+        setActiveSection("projects");
+      }}
+    >
+      + Add Project
+    </button>
+  )}
+
+</div>
 
   {stats && (
     <>
@@ -778,6 +822,9 @@ useEffect(() => {
     setActiveSection={setActiveSection}
     setTestCaseTab={setTestCaseTab}
   />
+)}
+{activeSection === "projectSettings" && (
+  <ProjectSettings />
 )}
 </div>
 

@@ -15,6 +15,7 @@ import ExecutionCompare from "./pages/ExecutionCompare";
 import SuiteExecution from "./pages/SuiteExecution";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import ChooseRole from "./pages/ChooseRole";
+import ProjectSettings from "./pages/ProjectSettings";
 // Protected Route Component
 function PrivateRoute({ children }) {
   const token =
@@ -103,6 +104,8 @@ function App() {
   element={<SuiteExecution />}
 />
 <Route path="/choose-role" element={<ChooseRole />} />
+<Route path="/project-settings" element={<ProjectSettings />} />
+
     </Routes>
   );
 }

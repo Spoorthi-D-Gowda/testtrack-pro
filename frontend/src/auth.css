@@ -1,3 +1,18 @@
+.dashboard-header{
+display:flex;
+align-items:center;
+gap:20px;
+justify-content:space-between;
+margin-bottom:20px;
+}
+
+.project-selector select{
+padding:8px 12px;
+border-radius:8px;
+border:1px solid #ccc;
+font-weight:500;
+min-width:200px;
+}
 .oauth-btn {
   display: flex;
   align-items: center;
