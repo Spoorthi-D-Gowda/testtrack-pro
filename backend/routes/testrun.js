@@ -29,6 +29,7 @@ if (!projectId) {
         endDate,
         testerIds,
         testCaseIds, 
+        milestoneId
       } = req.body;
 
       if (!name || !startDate || !endDate) {
@@ -70,30 +71,32 @@ if (testerIds && testerIds.length > 0) {
 }
 
       const testRun = await prisma.testRun.create({
-        data: {
-          name,
-          description,
-          startDate: new Date(startDate),
-          endDate: new Date(endDate),
-          createdById: req.user.id,
-          projectId, 
-          assignments: testerIds
-            ? {
-                create: testerIds.map((id) => ({
-                  testerId: id,
-                })),
-              }
-            : undefined,
-          testCases: testCaseIds
-            ? {
-                create: testCaseIds.map((id) => ({
-                  testCaseId: id,
-                })),
-              }
-            : undefined,
-        },
-      });
+  data: {
+    name,
+    description,
+    startDate: new Date(startDate),
+    endDate: new Date(endDate),
+    createdById: req.user.id,
+    projectId,
 
+    /* LINK MILESTONE */
+    milestoneId: milestoneId ? Number(milestoneId) : null,
+
+    /* ASSIGN TESTERS */
+    assignments: {
+      create: testerIds?.map((id) => ({
+        testerId: id
+      })) || []
+    },
+
+    /* LINK TEST CASES */
+    testCases: {
+      create: testCaseIds?.map((id) => ({
+        testCaseId: id
+      })) || []
+    }
+  }
+});
       res.status(201).json({
         msg: "Test Run created successfully",
         data: testRun,
@@ -254,27 +257,30 @@ if (!projectId) {
     let runs;
 
     if (req.user.role === "admin") {
-      // Admin sees all runs
-      runs = await prisma.testRun.findMany({
-  where: { projectId },
-  include: {
-    assignments: {
-      include: {
-        tester: {
-          select: { id: true, name: true, email: true },
+  // Admin sees all runs
+  runs = await prisma.testRun.findMany({
+    where: { projectId },
+    include: {
+      milestone: true,   // ⭐ ADD THIS
+
+      assignments: {
+        include: {
+          tester: {
+            select: { id: true, name: true, email: true },
+          },
+        },
+      },
+
+      executions: true,
+
+      testCases: {
+        include: {
+          testCase: true,
         },
       },
     },
-    executions: true,
-    testCases: {
-      include: {
-        testCase: true,
-      },
-    },
-  },
-  orderBy: { createdAt: "desc" },
-});
-
+    orderBy: { createdAt: "desc" },
+  });
     } else if (req.user.role === "tester") {
       // Tester sees only assigned runs
       runs = await prisma.testRun.findMany({

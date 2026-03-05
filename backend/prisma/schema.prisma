@@ -70,7 +70,7 @@ model User {
 model TestCase {
   id Int @id @default(autoincrement())
 
-  testCaseId String @unique // Auto ID (TC-2026-0001)
+  testCaseId  String 
 
   title       String
   description String
@@ -117,6 +117,7 @@ model TestCase {
   projectId   Int
   project     Project           @relation(fields: [projectId], references: [id])
   customFieldValues TestCaseCustomFieldValue[]
+   @@unique([projectId, testCaseId])
 }
 
 model TestCaseVersion {
@@ -263,6 +264,8 @@ model TestRun {
   testCases   TestRunTestCase[]
   projectId   Int
   project     Project             @relation(fields: [projectId], references: [id])
+  milestoneId Int?
+  milestone   Milestone?  @relation(fields: [milestoneId], references: [id])
 }
 
 model TestRunAssignment {
@@ -390,6 +393,8 @@ model Project {
   suites    TestSuite[]
   testRuns  TestRun[]
 
+  milestones Milestone[]   
+
   createdAt DateTime @default(now())
 
   testers ProjectTester[]
@@ -461,4 +466,20 @@ model TestCaseCustomFieldValue {
   field    ProjectCustomField @relation(fields: [fieldId], references: [id])
 
   @@unique([testCaseId, fieldId])
+}
+model Milestone {
+  id Int @id @default(autoincrement())
+
+  name String
+  description String?
+
+  targetDate DateTime
+  targetPassRate Int
+
+  projectId Int
+  project Project @relation(fields: [projectId], references: [id])
+
+  runs TestRun[]
+
+  createdAt DateTime @default(now())
 }

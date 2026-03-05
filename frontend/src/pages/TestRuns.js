@@ -17,6 +17,8 @@ const [selectedTestCases, setSelectedTestCases] = useState([]);
 const [runCases, setRunCases] = useState([]);
 const [selectedRunId, setSelectedRunId] = useState(null);
 const [showPopup, setShowPopup] = useState(false);
+const [milestones,setMilestones]=useState([]);
+const [milestoneId, setMilestoneId] = useState("");
 
   const token =
     localStorage.getItem("token") ||
@@ -24,6 +26,17 @@ const [showPopup, setShowPopup] = useState(false);
 const role =
   localStorage.getItem("role") ||
   sessionStorage.getItem("role");
+
+useEffect(()=>{
+
+  const loadMilestones=async()=>{
+    const res=await api.get("/milestones");
+    setMilestones(res.data);
+  };
+
+  loadMilestones();
+
+},[]);
 
   const fetchTestCases = useCallback(async () => {
   try {
@@ -84,6 +97,7 @@ useEffect(() => {
           description,
           startDate,
           endDate,
+           milestoneId,
           testerIds: selectedTesters,
           testCaseIds: selectedTestCases, 
         },
@@ -99,7 +113,7 @@ useEffect(() => {
       setStartDate("");
       setEndDate("");
       setSelectedTesters([]);
-
+      setMilestoneId("");
       fetchRuns();
 
     } catch (err) {
@@ -194,6 +208,23 @@ const handleTesterSelect = (id) => {
             required
           />
 
+<h4>Select Milestone</h4>
+
+<select
+value={milestoneId}
+onChange={(e)=>setMilestoneId(e.target.value)}
+>
+
+<option value="">No Milestone</option>
+
+{milestones.map(m=>(
+<option key={m.id} value={m.id}>
+{m.name}
+</option>
+))}
+
+</select>
+
 <h4>Select Testers</h4>
 
 <div className="selection-list">
@@ -244,7 +275,6 @@ const handleTesterSelect = (id) => {
           <button type="submit" className="success-btn">
             Create Test Run
           </button>
-
         </form>
 )}
         {/* ================= RUN LIST ================= */}
@@ -280,6 +310,11 @@ const handleTesterSelect = (id) => {
                 <label>Test cases</label>
                 <p>{run.testCases?.length || 0}</p>
               </div>
+
+              <div className="field">
+<label>Milestone</label>
+<p>{run.milestone?.name || "None"}</p>
+</div>
             </div>
 
     <button
@@ -342,6 +377,19 @@ const handleTesterSelect = (id) => {
   </div>
 ))}
 <div className="popup-side-actions">
+<button
+  className="add-btn"
+  onClick={() => {
+    navigate("/dashboard", {
+      state: {
+        activeSection: "testcases",
+        testCaseTab: "create"
+      }
+    });
+  }}
+>
+  + Add Test Case
+</button>
       <button 
       className="popup-small-btn"
       onClick={() => setShowPopup(false)}>
