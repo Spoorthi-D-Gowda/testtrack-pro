@@ -17,6 +17,7 @@ import "react-resizable/css/styles.css";
 import CreateProject from "./CreateProject";
 import MyAssignedProjects from "./MyAssignedProjects";
 import ProjectSettings from "./ProjectSettings";
+import Milestones from "./Milestones";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -82,8 +83,13 @@ useEffect(() => {
 }, []);
 
 useEffect(() => {
+
   if (location.state?.activeSection) {
     setActiveSection(location.state.activeSection);
+  }
+
+  if (location.state?.testCaseTab) {
+    setTestCaseTab(location.state.testCaseTab);
   }
 
   if (location.state?.suiteExecutionId) {
@@ -91,6 +97,7 @@ useEffect(() => {
       location.state.suiteExecutionId
     );
   }
+
 }, [location]);
 
 useEffect(() => {
@@ -254,6 +261,19 @@ useEffect(() => {
     My Assigned Projects
   </button>
 )}
+
+  {(role === "tester" || role === "admin") && (
+<button
+  className="nav-btn"
+  onClick={() => {
+    setActiveSection("milestones");
+    setTestCaseTab(null);
+  }}
+>
+  Milestones
+</button>
+)}
+
 {role === "admin" && (
   <button
     className="nav-btn"
@@ -826,6 +846,10 @@ useEffect(() => {
 {activeSection === "projectSettings" && (
   <ProjectSettings />
 )}
+{activeSection === "milestones" && (
+  <Milestones />
+)}
+
 </div>
 
     </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import api from "../api";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../auth.css";
 
@@ -24,9 +24,9 @@ const sequence = Number(queryParams.get("sequence") || 0);
  console.log("Route ID:", id);
 console.log("SuiteExecutionId:", suiteExecutionId);
 
-  const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+const token =
+  localStorage.getItem("accessToken") ||
+  sessionStorage.getItem("accessToken");
 
 useEffect(() => {
   let interval;
@@ -53,7 +53,7 @@ const formatTime = (totalSeconds) => {
 const startExecution = useCallback(async () => {
   try {
 
-    const res = await axios.post(
+    const res = await api.post(
       `http://localhost:5000/api/executions/start/${id}`,
       {},
       {
@@ -73,7 +73,7 @@ const startExecution = useCallback(async () => {
   // ================= FETCH EXECUTION =================
 const fetchExecution = useCallback(async (id) => {
   try {
-    const res = await axios.get(
+    const res = await api.get(
       `http://localhost:5000/api/executions/${id}`,
       {
         headers: { "x-auth-token": token },
@@ -102,7 +102,7 @@ const updateStep = async (stepExecutionId, field, value) => {
     }));
 
     // 2️⃣ Call backend (no re-fetch)
-    await axios.put(
+    await api.put(
       `http://localhost:5000/api/executions/step/${stepExecutionId}`,
       { [field]: value },
       {
@@ -125,7 +125,7 @@ const completeExecution = async () => {
       ? Number(manualTime)
       : seconds;
 
-    await axios.post(
+    await api.post(
       `http://localhost:5000/api/executions/complete/${executionId}`,
       { totalTime: finalTime },
       {
@@ -139,7 +139,7 @@ const completeExecution = async () => {
 if (suiteExecutionId) {
 
   // Fetch suite execution details
-  const suiteRes = await axios.get(
+  const suiteRes = await api.get(
     `http://localhost:5000/api/suites/execution/${suiteExecutionId}`,
     { headers: { "x-auth-token": token } }
   );
@@ -240,7 +240,7 @@ useEffect(() => {
   formData.append("file", file);
 
   try {
-    await axios.post(
+    await api.post(
       `http://localhost:5000/api/executions/step/${stepId}/evidence`,
       formData,
       {
@@ -263,7 +263,7 @@ useEffect(() => {
 
 const quickFail = async (stepExecutionId) => {
   try {
-    const res = await axios.post(
+    const res = await api.post(
       `http://localhost:5000/api/bugs/quick-fail/${stepExecutionId}`,
       {},
       {
