@@ -1006,14 +1006,15 @@ return (
           />
 
           {stepsList.length > 1 && (
-            <button
-              type="button"
-              onClick={() => removeStep(index)}
-              style={{ background: "#dc2626", marginTop: "5px" }}
-            >
-              Remove Step
-            </button>
-          )}
+  <button
+    type="button"
+    onClick={() => removeStep(index)}
+    className="delete-btn"
+    style={{ marginTop: "5px" }}
+  >
+    Remove Step
+  </button>
+)}
         </div>
       ))}
 

@@ -32,6 +32,7 @@ const [projects, setProjects] = useState([]);
 const [selectedProject, setSelectedProject] = useState(
   localStorage.getItem("projectId") || ""
 );
+const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
 
   const role =
@@ -203,6 +204,7 @@ useEffect(() => {
     }}
   >
     Manage Test Cases
+    <span className="arrow">›</span>
   </button>
 
 {showTestCaseMenu && (
@@ -258,7 +260,8 @@ useEffect(() => {
       setTestCaseTab(null);
     }}
   >
-    My Assigned Projects
+    Tester WorkSpace
+    <span className="arrow">›</span>
   </button>
 )}
 
@@ -271,6 +274,7 @@ useEffect(() => {
   }}
 >
   Milestones
+  <span className="arrow">›</span>
 </button>
 )}
 
@@ -278,11 +282,11 @@ useEffect(() => {
   <button
     className="nav-btn"
     onClick={() => {
-      setActiveSection("assignedProjects");
-      setTestCaseTab(null);
-    }}
+        setActiveSection("projects");
+      }}
   >
-    Ongoing Projects
+    Current Projects
+    <span className="arrow">›</span>
   </button>
 )}
 
@@ -297,6 +301,7 @@ useEffect(() => {
     }}
   >
     Execution History
+    <span className="arrow">›</span>
   </button>
 )}
 
@@ -309,6 +314,7 @@ useEffect(() => {
 }}
     >
   Test Suites
+  <span className="arrow">›</span>
 </button>
 )}
 {(role === "tester" || role === "admin") && (
@@ -320,6 +326,7 @@ useEffect(() => {
     }}
   >
     Test Runs
+    <span className="arrow">›</span>
   </button>
 )}
 {(role === "tester" || role === "admin") && (
@@ -331,6 +338,7 @@ useEffect(() => {
 }}
             >
               Manage Bugs
+              <span className="arrow">›</span>
             </button>
 )}
 
@@ -342,7 +350,8 @@ useEffect(() => {
   setTestCaseTab(null);
 }}
           >
-            My Assigned Bugs
+            Developer workspace
+            <span className="arrow">›</span>
           </button>
         )}
     {(role === "admin" || role === "tester") && (
@@ -354,6 +363,7 @@ useEffect(() => {
   }}
 >
   Reports
+  <span className="arrow">›</span>
 </button>
    )}
 
@@ -425,83 +435,103 @@ useEffect(() => {
     }}
   >
     Project Settings
+    <span className="arrow">›</span>
   </button>
 )}
-
-        <button
-          className="nav-btn logout-btn"
-          onClick={logout}
-        >
-          Logout
-        </button>
-
-        <button
-  onClick={async () => {
-    try {
-      const token =
-        localStorage.getItem("accessToken") ||
-        sessionStorage.getItem("accessToken");
-
-      await api.post(
-        "http://localhost:5000/api/auth/logout-all",
-        {},
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
-
-      // 🔥 Clear current device
-      localStorage.clear();
-      sessionStorage.clear();
-
-      alert("Logged out from all devices");
-
-      navigate("/");
-
-    } catch (err) {
-      console.error(err);
-      alert("Logout failed");
-    }
-  }}
->
-  Logout All Devices
-</button>
       </div>
 
       {/* RIGHT CONTENT */}
       <div className="main-content">
-
-  {activeSection === "dashboard" && (
-    !user ? (
-      <div className="loading-overlay">
-        <div className="blur-box">Loading...</div>
-      </div>
-    ) : (
-      <>
-        {/* USER INFO */}
-  
-        <div className="welcome-card">
+        {user && (
+<div className="welcome-card">
   <div>
     <h2 className="welcome-title">Welcome back,</h2>
     <h1 className="welcome-name">{user.name || user.email}</h1>
     <p className="welcome-role">{user.role}</p>
   </div>
+   <div className="header-center">
 
-<button
-  className="change-password-btn"
-  onClick={() => {
-    setActiveSection("changePassword");
-    setTestCaseTab(null);
+    <select
+  className="project-select"
+  value={selectedProject}
+  onChange={(e) => {
+    const id = e.target.value;
+    setSelectedProject(id);
+    localStorage.setItem("projectId", id);
+    window.location.reload();
   }}
 >
-  Change Password
-</button>
+      <option value="">Select Project</option>
 
+      {projects.map((p) => (
+        <option key={p.id} value={p.id}>
+          {p.name}
+        </option>
+      ))}
+    </select>
+
+  </div>
+
+  <div className="profile-container">
+    <div
+  className="profile-icon"
+  onClick={() => setShowProfileMenu(!showProfileMenu)}
+>
+  <img src="/assets/profile.png" alt="profile" />
 </div>
+     {showProfileMenu && (
+      <div className="profile-dropdown">
 
+        <button
+          onClick={() => {
+            setActiveSection("changePassword");
+            setShowProfileMenu(false);
+          }}
+        >
+          Change Password
+        </button>
 
+        <button onClick={logout}>
+          Logout
+        </button>
 
-{role === "developer" && stats?.devStats && (
+        <button
+          onClick={async () => {
+            const token =
+              localStorage.getItem("accessToken") ||
+              sessionStorage.getItem("accessToken");
+
+            await api.post(
+              "http://localhost:5000/api/auth/logout-all",
+              {},
+              { headers: { "x-auth-token": token } }
+            );
+
+            localStorage.clear();
+            sessionStorage.clear();
+            navigate("/");
+          }}
+        >
+          Logout All Devices
+        </button>
+         </div>
+    )}
+  </div>
+</div>
+)}
+
+{/* PAGE CONTENT */}
+
+{activeSection === "dashboard" && (
+  !user ? (
+    <div className="loading-overlay">
+      <div className="blur-box">Loading...</div>
+    </div>
+  ) : (
+    <>
+        
+        
+        {role === "developer" && stats?.devStats && (
   <>
     {/* ===== ROW 1 - BUG COUNTERS ===== */}
     <div className="dashboard-top-cards">
@@ -585,34 +615,6 @@ useEffect(() => {
 <div className="dashboard-header">
 
   <h2>Dashboard</h2>
-
-  {/* PROJECT SELECTOR */}
-  <div className="project-selector">
-
-    <select
-      value={selectedProject}
-      onChange={(e) => {
-        const id = e.target.value;
-
-        setSelectedProject(id);
-        localStorage.setItem("projectId", id);
-
-        // refresh data for selected project
-        window.location.reload();
-      }}
-    >
-
-      <option value="">Select Project</option>
-
-      {projects.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-
-    </select>
-
-  </div>
 
   {/* ACTION BUTTONS */}
   {role === "tester" && (

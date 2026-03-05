@@ -176,38 +176,43 @@ const handleTesterSelect = (id) => {
         <h2>Test Run Management</h2>
 
         {/* ================= CREATE FORM ================= */}
-    {role === "admin" && (
-        <form onSubmit={createRun} style={{ marginBottom: "30px" }}>
+  {(role === "tester" || role === "admin") && (
+       <form onSubmit={createRun}>
+        <div className="testrun-form">
+ 
+{/* ROW 1 */}
+<div className="testrun-row">
+  <input
+    placeholder="Run Name"
+    value={name}
+    onChange={(e) => setName(e.target.value)}
+    required
+  />
 
-          <input
-            placeholder="Run Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
+  <input
+    placeholder="Description"
+    value={description}
+    onChange={(e) => setDescription(e.target.value)}
+  />
+</div>
 
-          <input
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+{/* ROW 2 */}
+<div className="testrun-row">
+  <input
+    type="date"
+    value={startDate}
+    onChange={(e) => setStartDate(e.target.value)}
+    required
+  />
 
-          <label>Start Date</label>
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-          />
-
-          <label>End Date</label>
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            required
-          />
-
+  <input
+    type="date"
+    value={endDate}
+    onChange={(e) => setEndDate(e.target.value)}
+    required
+  />
+</div>
+</div>
 <h4>Select Milestone</h4>
 
 <select

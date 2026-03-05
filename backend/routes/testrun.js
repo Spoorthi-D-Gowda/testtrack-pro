@@ -293,6 +293,8 @@ if (!projectId) {
           },
         },
        include: {
+  milestone: true,   // ⭐ ADD THIS
+
   assignments: {
     include: {
       tester: {
@@ -300,7 +302,9 @@ if (!projectId) {
       },
     },
   },
+
   executions: true,
+
   testCases: {
     include: {
       testCase: true,
