@@ -34,7 +34,7 @@ const [selectedProject, setSelectedProject] = useState(
 );
 const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
-
+const [showProjects, setShowProjects] = useState(false);
   const role =
     localStorage.getItem("role") ||
     sessionStorage.getItem("role");
@@ -451,26 +451,41 @@ useEffect(() => {
   </div>
    <div className="header-center">
 
-    <select
-  className="project-select"
-  value={selectedProject}
-  onChange={(e) => {
-    const id = e.target.value;
-    setSelectedProject(id);
-    localStorage.setItem("projectId", id);
-    window.location.reload();
-  }}
->
-      <option value="">Select Project</option>
+  <div className="project-dropdown">
 
-      {projects.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
+    <div
+      className="dropdown-selected"
+      onClick={() => setShowProjects(!showProjects)}
+    >
+      {projects.find(p => p.id == selectedProject)?.name || "Select Project"}
+
+      <span className={showProjects ? "arrow open" : "arrow"}>
+        ▼
+      </span>
+    </div>
+
+    {showProjects && (
+      <div className="dropdown-list">
+        {projects.map((p) => (
+          <div
+            key={p.id}
+            className="dropdown-item"
+            onClick={() => {
+              setSelectedProject(p.id);
+              localStorage.setItem("projectId", p.id);
+              setShowProjects(false);   {/* close dropdown */}
+              window.location.reload();
+            }}
+          >
+            {p.name}
+          </div>
+        ))}
+      </div>
+    )}
 
   </div>
+
+</div>
 
   <div className="profile-container">
     <div
@@ -549,43 +564,6 @@ useEffect(() => {
       <div className="dash-card green">
         <p className="card-label">Reopened Bugs</p>
         <h2>{stats.devStats.reopenedBugs}</h2>
-      </div>
-
-    </div>
-
-    {/* ===== ROW 2 ===== */}
-    <div className="middle-section">
-
-      {/* Bug Severity */}
-      <div className="widget-cards large">
-        <h3>Bug Severity</h3>
-        <div className="analytics-bars">
-          {stats.devStats.severityStats.map((s, i) => (
-            <div key={i} className="bar">
-              <div
-                className="bar-fill"
-                style={{ height: `${s._count.severity * 20}px` }}
-              />
-              <span>{s.severity}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bug Priority */}
-      <div className="widget-cards large">
-        <h3>Bug Priority</h3>
-        <div className="analytics-bars">
-          {stats.devStats.priorityStats.map((p, i) => (
-            <div key={i} className="bar">
-              <div
-                className="bar-fill"
-                style={{ height: `${p._count.priority * 20}px` }}
-              />
-              <span>{p.priority}</span>
-            </div>
-          ))}
-        </div>
       </div>
 
     </div>
@@ -674,16 +652,21 @@ useEffect(() => {
       {/* ===== ANALYSIS + USERS ===== */}
       <div className="middle-section">
 {role === "admin" && (
-  <div
-    style={{
-      background: "#e6f6ff",
-      padding: "20px",
-      borderRadius: "12px",
-      minHeight: "200px"
-    }}
-  >
-    <h3>Projects</h3>
+ <div
+  className="widget-card"
+  style={{
+    background: "#e6f6ff",
+    padding: "20px",
+    borderRadius: "12px",
+    minHeight: "200px",
+    boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
+    transition: "all 0.25s ease"
+  }}
+>
 
+
+    <h3>Projects</h3>
+<div className="project-list-scroll">
 {projects.map((p) => (
   <div
     key={p.id}
@@ -697,7 +680,7 @@ useEffect(() => {
     </div>
   </div>
 ))}
-
+</div>
   </div>
 )}
  
@@ -707,7 +690,6 @@ useEffect(() => {
   <ul className="team-list">
     {stats.testers.map((t) => (
       <li key={t.id} className="team-item">
-        <div className="team-name">{t.name}</div>
         <div className="team-email">{t.email}</div>
       </li>
     ))}
@@ -719,7 +701,6 @@ useEffect(() => {
   <ul className="team-list">
     {stats.developers.map((d) => (
       <li key={d.id} className="team-item">
-        <div className="team-name">{d.name}</div>
         <div className="team-email">{d.email}</div>
       </li>
     ))}
@@ -733,52 +714,12 @@ useEffect(() => {
     <ul className="team-list">
       {stats.admins?.map(a => (
         <li key={a.id} className="team-item">
-          <div className="team-name">{a.name}</div>
           <div className="team-email">{a.email}</div>
         </li>
       ))}
     </ul>
   </div> 
 )}
-
-       {/* Project Analysis */}
-        <div className="widget-card large">
-  <h3>Project Analytics</h3>
-
-  <div className="analytics-bars">
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.passedTestCases * 5}px` }}
-      />
-      <span>Passed</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.failedTestCases * 5}px` }}
-      />
-      <span>Failed</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.blockedTestCases * 5}px` }}
-      />
-      <span>Blocked</span>
-    </div>
-
-    <div className="bar">
-      <div
-        className="bar-fill"
-        style={{ height: `${stats.skippedTestCases * 5}px` }}
-      />
-      <span>Skipped</span>
-    </div>
-  </div>
-</div>
 
      </div>
       </>

@@ -1,3 +1,98 @@
+.team-list{
+  list-style:none;
+  padding:0;
+  margin:10px 0 0 0;
+
+  height:160px;        /* force scroll area */
+  overflow-y:auto;
+}
+
+
+/* scrollbar width */
+.team-list::-webkit-scrollbar{
+  width:6px;
+}
+
+/* scrollbar thumb */
+.team-list::-webkit-scrollbar-thumb{
+  background:#93c5fd;
+  border-radius:10px;
+}
+
+/* optional track */
+.team-list::-webkit-scrollbar-track{
+  background:transparent;
+}
+.project-dropdown{
+position:relative;
+width:220px;
+}
+
+.dropdown-list{
+position:absolute;
+top:45px;
+left:0;
+width:100%;
+background:white;
+border-radius:10px;
+box-shadow:0 8px 20px rgba(0,0,0,0.15);
+max-height:150px;
+overflow-y:auto;
+z-index:100;
+}
+.dropdown-selected{
+background:#d9efe4;
+padding:10px 15px;
+border-radius:25px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:14px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+.arrow{
+transition:transform 0.25s ease;
+}
+
+.arrow.open{
+transform:rotate(180deg);
+}
+/* scrollbar */
+.dropdown-list::-webkit-scrollbar{
+width:6px;
+}
+
+.dropdown-list::-webkit-scrollbar-thumb{
+background:white;
+border-radius:10px;
+}
+
+/* items */
+
+.dropdown-item{
+padding:10px 15px;
+cursor:pointer;
+}
+
+.dropdown-item:hover{
+background:#f1f5f9;
+}
+.project-list-scroll{
+  flex:1;
+  overflow-y:auto;
+  margin-top:10px;
+}
+
+/* scrollbar width */
+.project-list-scroll::-webkit-scrollbar{
+  width:6px;
+}
+
+/* scrollbar thumb */
+.project-list-scroll::-webkit-scrollbar-thumb{
+  background:white;
+  border-radius:10px;
+}
 .add-test-btn{
 background:#166534;
 color:white;
@@ -294,53 +389,36 @@ margin-bottom:25px;
 color:#1f2937;
 }
 .project-select{
-appearance:none;
-background:#aad2e7;
-border:1px solid #e2e8f0;
-border-radius:25px;
-padding:10px 20px;
-font-size:14px;
-font-weight:500;
-color:"#e6f6ff";
-cursor:pointer;
-transition:0.25s;
-min-width:200px;
-text-align:center;
+  appearance:none;
+  background:#cfe7dd;   /* same light green as dashboard cards */
+  border:none;
+  border-radius:25px;
+  padding:10px 40px 10px 20px;
+  font-size:14px;
+  font-weight:500;
+  color:#1f2937;
+  cursor:pointer;
+  transition:all 0.25s ease;
+  min-width:200px;
+  text-align:center;
+
+  /* arrow icon */
+  background-image:url("data:image/svg+xml;utf8,<svg fill='%231f2937' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  background-size:16px;
 }
 
 .project-select:hover{
-background:white;
-border-color:#3b82f6;
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(0,0,0,0.15);
 }
-
-.project-select:focus{
-outline:none;
-border-color:#3b82f6;
-box-shadow:0 0 0 3px rgba(59,130,246,0.2);
-}
-
 .profile-icon img{
 width:42px;
 height:42px;
 object-fit:cover;
 border-radius:50%;
 display:block;
-}
-.team-list{
-flex:1;
-overflow-y:auto;
-padding-right:5px;
-margin-top:10px;
-}
-
-/* small scrollbar */
-.team-list::-webkit-scrollbar{
-width:5px;
-}
-
-.team-list::-webkit-scrollbar-thumb{
-background:#3b82f6;
-border-radius:10px;
 }
 .layout{
 margin-top:20px;
@@ -709,25 +787,12 @@ color:#1e293b;
 font-size:13px;
 color:#6f7988;
 }
-.team-list {
-  list-style: none;
-  padding: 0;
-  margin-top: 15px;
-}
-
 .team-item {
   margin-bottom: 15px;
 }
-
-.team-name {
-  font-weight: 600;
-  font-size: 15px;
-  color: #ffffff;
-}
-
 .team-email {
   font-size: 13px;
-  color: #9ca3af;
+  color:black;
 }
 .team-card {
   background: #0f0f0f;
@@ -1005,10 +1070,10 @@ margin-top:20px;
   font-weight: bold;
 }
 .widget-card{
-background:linear-gradient(135deg,#111827,#1e293b);
+background:white;
 padding:20px;
 border-radius:18px;
-color:white;
+color:black;
 height:260px;
 display:flex;
 flex-direction:column;
