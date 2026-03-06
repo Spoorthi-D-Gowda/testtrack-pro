@@ -125,7 +125,7 @@ const assignTesters = async () => {
           onClick={createProject}
           style={{
             padding: "10px 20px",
-            background: "#2563eb",
+            background: "#0d2558",
             color: "white",
             border: "none",
             borderRadius: "6px"
@@ -139,19 +139,10 @@ const assignTesters = async () => {
 
 {projects.map((p) => (
   <div
-    key={p.id}
-    style={{
-      padding: "10px",
-      border: "1px solid #ddd",
-      marginBottom: "10px",
-      borderRadius: "6px"
-    }}
-  >
-    <strong>{p.name}</strong>
-
-   <p style={{fontSize:"12px",color:"#666"}}>
-  {p.description}
-</p>
+    key={p.id} className="project-card">
+<div className="project-info">
+     <h3>{p.name}</h3>
+    <p>{p.description}</p>
 
 {p.testers?.length > 0 && (
   <div style={{marginTop:"5px"}}>
@@ -162,21 +153,14 @@ const assignTesters = async () => {
     ))}
   </div>
 )}
+</div>
 
-    <button
-      style={{
-        padding: "6px 12px",
-        background: "#2563eb",
-        color: "#fff",
-        border: "none",
-        borderRadius: "5px",
-        marginTop: "6px",
-        cursor: "pointer"
-      }}
-      onClick={() => openAssignTesters(p.id)}
-    >
-      Assign Testers
-    </button>
+   <button
+  className="add-test-btn"
+  onClick={() => openAssignTesters(p.id)}
+>
+  Assign Testers
+</button>
 
     {assignProjectId === p.id && (
       <div

@@ -100,42 +100,56 @@ const updateWorkflow = async (id, statuses) => {
   loadSettings();
 };
   return (
-  <div className="auth-container">
+    <div className="assigned-projects-wrapper">
+
+  <div className="assigned-projects-box">
    
     <div className="container">
-
-      <h2>Project Settings</h2>
 
       {/* MODULES */}
       <div className="settings-box">
         <h3>Modules</h3>
 
+<div className="settings-input-row">
+
 <input
-        type="text"
-        placeholder="New Module"
-        value={newModule}
-        onChange={(e) => setNewModule(e.target.value)}
-      />
+  type="text"
+  placeholder="New Module"
+  value={newModule}
+  onChange={(e) => setNewModule(e.target.value)}
+/>
 
-      <button onClick={addModule}>Add Module</button>
+<button className="settings-add-btn" onClick={addModule}>
+Add Module
+</button>
 
-       {modules.map(m => (
-  <div key={m.id}>
-    {m.name}
+</div>
 
-    <button
-      onClick={() => deleteModule(m.id)}
-    >
-      Delete
-    </button>
-  </div>
+<div className="settings-list">
+{modules.map(m => (
+
+<div key={m.id} className="settings-item-card">
+
+<span>{m.name}</span>
+
+<button
+className="delete-btn"
+onClick={() => deleteModule(m.id)}
+>
+Delete
+</button>
+
+</div>
+
 ))}
+</div>
 
       </div>
 
       {/* ENVIRONMENTS */}
       <div className="settings-box">
         <h3>Environments</h3>
+  <div className="settings-input-row">
 
 <input
   value={newEnv}
@@ -143,21 +157,34 @@ const updateWorkflow = async (id, statuses) => {
   placeholder="New environment"
 />
 
-<button onClick={addEnv}>Add</button>
+<button className="settings-add-btn" onClick={addEnv}>Add Environment</button>
+</div>
+       <div className="settings-list">
+{environments.map(e => (
 
-        {environments.map(e => (
-          <div key={e.id}>{e.name}
-          <button onClick={() => deleteEnv(e.id)}>
-      Delete
-    </button>
-  </div>
-        ))}
+<div key={e.id} className="settings-item-card">
+
+<span>{e.name}</span>
+
+<button
+className="delete-btn"
+onClick={() => deleteEnv(e.id)}
+>
+Delete
+</button>
+
+</div>
+
+))}
+</div>
 
       </div>
 
       {/* CUSTOM FIELDS */}
       <div className="settings-box">
         <h3>Custom Fields</h3>
+  
+<div className="settings-input-row">
 
 <input
   placeholder="Field name"
@@ -174,23 +201,33 @@ const updateWorkflow = async (id, statuses) => {
   <option value="dropdown">Dropdown</option>
 </select>
 
-<button onClick={addField}>Add Field</button>
+<button className="settings-add-btn" onClick={addField}>Add Field</button>
+</div>
+        <div className="settings-list">
+{fields.map(f => (
 
-        {fields.map(f => (
-          <div key={f.id}>
-            {f.name} ({f.type})
-            <button onClick={() => deleteField(f.id)}>
-      Delete
-    </button>
-  
-          </div>
-        ))}
+<div key={f.id} className="settings-item-card">
+
+<span>{f.name} ({f.type})</span>
+
+<button
+className="delete-btn"
+onClick={() => deleteField(f.id)}
+>
+Delete
+</button>
+
+</div>
+
+))}
+</div>
 
       </div>
 
       {/* WORKFLOW */}
       <div className="settings-box">
         <h3>Workflow</h3>
+  <div className="settings-input-row">
 
 <input
   placeholder="Draft, Review, Approved"
@@ -198,10 +235,12 @@ const updateWorkflow = async (id, statuses) => {
   onChange={(e)=>setStatuses(e.target.value)}
 />
 
-<button onClick={saveWorkflow}>Save Workflow</button>
+<button className="settings-add-btn" onClick={saveWorkflow}>Save Workflow</button>
 
+</div>
+<div className="settings-list">
       {workflow.map(w => (
-  <div key={w.id} className="settings-item">
+  <div key={w.id}  className="settings-item-card">
 
     <input
       value={w.statuses.join(", ")}
@@ -216,18 +255,19 @@ const updateWorkflow = async (id, statuses) => {
       }
     />
 
-    <button onClick={() => updateWorkflow(w.id, w.statuses)}>
-      Edit
+    <button className="delete-btn" onClick={() => updateWorkflow(w.id, w.statuses)}>
+      Edit Workfolw
     </button>
 
   </div>
 ))}
+</div>
 
       </div>
 
     </div>
-
-  </div>
+</div>
+</div>
   );
 };
 

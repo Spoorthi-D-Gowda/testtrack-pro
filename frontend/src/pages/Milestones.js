@@ -10,7 +10,9 @@ const [name, setName] = useState("");
 const [date, setDate] = useState("");
 const [rate, setRate] = useState("");
 
-
+const role =
+localStorage.getItem("role") ||
+sessionStorage.getItem("role");
 /* LOAD MILESTONES */
 
 const load = async () => {
@@ -60,15 +62,15 @@ const deleteMilestone = async (id) => {
 
 
 return (
-
-<div className="auth-container">
-<div className="auth-card">
+<div className="assigned-projects-wrapper">
+      <div className="assigned-projects-box">
+<div className="milestone-page">
 
 <h2>Project Milestones</h2>
 
 
 {/* CREATE FORM */}
-
+{role === "admin" && (
 <form onSubmit={create} className="milestone-form">
 
 <input
@@ -98,12 +100,12 @@ Create Milestone
 </button>
 
 </form>
+)}
 
-
-<h3>Milestones</h3>
 
 
 {milestones.map(m => {
+    
 
  const p = progress[m.id] || { passRate: 0 };
 
@@ -132,6 +134,9 @@ Create Milestone
 <label>Linked Runs</label>
 <p>{m.runs.length}</p>
 </div>
+</div>
+
+<div className="milestone-bottom">
 
 <div className="field">
 <label>Progress</label>
@@ -139,22 +144,14 @@ Create Milestone
 </div>
 
 
-{/* PROGRESS BAR */}
-
-<div className="progress-bar">
-<div
- className="progress-fill"
- style={{width:`${p.passRate}%`}}
-/>
+<div className="milestone-actions">
+  <button
+    onClick={() => deleteMilestone(m.id)}
+    className="delete-btn"
+  >
+    Delete
+  </button>
 </div>
-
-
-<button
- onClick={()=>deleteMilestone(m.id)}
- className="danger-btn"
->
-Delete
-</button>
 
 </div>
 
@@ -165,8 +162,8 @@ Delete
 })}
 
 </div>
-</div>
-
+ </div>
+ </div>
 );
 
 }

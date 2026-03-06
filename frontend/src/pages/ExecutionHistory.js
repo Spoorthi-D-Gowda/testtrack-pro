@@ -65,6 +65,9 @@ const formatTime = (seconds) => {
 
 
   return (
+      <div className="assigned-projects-wrapper">
+
+  <div className="assigned-projects-box">
     <div className="auth-card test-card">
 
       <h2>Execution History</h2>
@@ -153,6 +156,8 @@ const formatTime = (seconds) => {
           )}
         </div>
 
+      </div>
+    </div>
       </div>
     </div>
   );
