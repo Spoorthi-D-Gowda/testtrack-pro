@@ -1,70 +1,140 @@
-# Getting Started with Create React App
+# TestTrack Pro Frontend
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This directory contains the **React frontend application** for TestTrack Pro.  
+The frontend provides the user interface for managing test cases, test suites, bug tracking, executions, and project analytics.
 
-## Available Scripts
+It communicates with the backend API built with **Node.js and Express**.
 
-In the project directory, you can run:
+---
 
-### `npm start`
+## Tech Stack
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- React
+- Axios
+- React Router
+- CSS
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## Features
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The frontend provides the UI for:
 
-### `npm run build`
+- User authentication (Login, Register, Password reset)
+- Dashboard with analytics
+- Test case management
+- Test suite management
+- Test execution tracking
+- Bug tracking
+- Reports and analytics
+- Project configuration and milestones
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## Project Structure
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
+```
+frontend/
+│
+├── public/              # Static files
+├── src/
+│   ├── pages/           # Application pages
+│   ├── auth.css         # CSS files
+│   ├── api.js           # Central Axios configuration with interceptors
+│   └── App.js           # Main application component
+├── package.json
+└── README.md
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+---
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Important Pages
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+| Page              | Description                                 |
+|-------------------|---------------------------------------------|
+| Dashboard.js      | Main dashboard showing system overview       |
+| TestCases.js      | Create, edit, clone, and manage test cases   |
+| TestSuites.js     | Manage test suites and suite execution       |
+| ExecuteTestCase.js| Execute individual test cases                |
+| ExecutionHistory.js| View execution history                      |
+| Bugs.js           | Bug tracking and assignment                  |
+| Reports.js        | View system reports and analytics            |
+| ProjectSettings.js| Configure project settings                   |
+| Milestones.js     | Manage project milestones                    |
+| Login.js          | User login                                   |
+| Register.js       | User registration                            |
+| ForgotPassword.js | Password recovery                            |
+| ResetPassword.js  | Password reset                               |
+| VerifyEmail.js    | Email verification                           |
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+---
 
-## Learn More
+## Installation
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Navigate to the frontend directory and install dependencies.
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```sh
+cd frontend
+npm install
+```
 
-### Code Splitting
+### Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+Start the development server:
 
-### Analyzing the Bundle Size
+```sh
+npm start
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The application will run at:
 
-### Making a Progressive Web App
+```
+http://localhost:3000
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+Make sure the backend server is running on:
 
-### Advanced Configuration
+```
+http://localhost:5000
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+### API Integration
 
-### Deployment
+The frontend communicates with the backend using Axios.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Example API request:
 
-### `npm run build` fails to minify
+```js
+axios.get("http://localhost:5000/api/testcases")
+```
+A centralized Axios configuration is defined in:
+Copy code
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+src/api.js
+
+This file sets the base API URL and automatically attaches authentication headers using Axios interceptors.
+
+Authentication is handled using JWT tokens stored in localStorage or sessionStorage.
+
+### Environment Configuration
+
+If needed, create an .env file in the frontend directory to store environment variables such as:
+
+```
+REACT_APP_API_URL=http://localhost:5000
+```
+
+### Build for Production
+
+To create an optimized production build:
+
+```sh
+npm run build
+```
+
+The build files will be generated in the build/ folder.
+
+---
+
+
