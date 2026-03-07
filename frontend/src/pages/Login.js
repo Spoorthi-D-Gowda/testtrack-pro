@@ -151,6 +151,10 @@ if (remember) {
 
           <button type="submit" className="login-btn">Login</button>
 
+<div className="login-divider">
+  <span>OR</span>
+</div>
+
 <button
   className="oauth-btn google-btn"
   onClick={() =>

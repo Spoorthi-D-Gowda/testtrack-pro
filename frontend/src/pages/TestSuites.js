@@ -208,6 +208,7 @@ const reorder = async (id, direction) => {
 
         {/* ================= CREATE FORM ================= */}
         <form onSubmit={createSuite} style={{ marginBottom: "25px" }}>
+    <div className="suite-input-row">
           <input
             placeholder="Suite Name"
             value={name}
@@ -226,7 +227,7 @@ const reorder = async (id, direction) => {
             value={module}
             onChange={(e) => setModule(e.target.value)}
           />
-
+    </div>
           <select
             value={parentId}
             onChange={(e) => setParentId(e.target.value)}
