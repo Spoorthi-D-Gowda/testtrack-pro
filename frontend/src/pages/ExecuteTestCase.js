@@ -15,7 +15,7 @@ const id = testCaseId;
   const [seconds, setSeconds] = useState(0);
 const [isRunning, setIsRunning] = useState(true);
 const [manualTime, setManualTime] = useState("");
-
+const [createdBugs, setCreatedBugs] = useState([]);
   const location = useLocation();
 const queryParams = new URLSearchParams(location.search);
 const runId = queryParams.get("runId");
@@ -263,19 +263,43 @@ useEffect(() => {
 
 const quickFail = async (stepExecutionId) => {
   try {
+
+    await api.put(
+      `http://localhost:5000/api/executions/step/${stepExecutionId}`,
+      { status: "Fail" },
+      {
+        headers: {
+          "x-auth-token": token,
+          "x-project-id": localStorage.getItem("projectId")
+        }
+      }
+    );
+
     const res = await api.post(
       `http://localhost:5000/api/bugs/quick-fail/${stepExecutionId}`,
       {},
       {
-        headers: { "x-auth-token": token },
+        headers: {
+          "x-auth-token": token,
+          "x-project-id": localStorage.getItem("projectId")
+        }
       }
     );
 
-    alert("Bug created successfully");
+    alert(res.data.msg);
 
-  } catch (err) {
-    alert(err.response?.data?.msg || "Failed to create bug");
+    // disable button
+    setCreatedBugs(prev => [...prev, stepExecutionId]);
+
+  }catch (err) {
+
+  if (err.response?.data?.msg === "Bug already created for this step") {
+    alert("Bug already exists for this step.");
+    return;
   }
+
+  alert(err.response?.data?.msg || "Failed to create bug");
+}
 };
 
   return (
@@ -341,15 +365,18 @@ const quickFail = async (stepExecutionId) => {
               <option>Skipped</option>
             </select>
 
-            {stepExec.status === "Fail" && (
-  <button
-    className="danger-btn"
-    onClick={() => quickFail(stepExec.id)}
-  >
-    Fail & Create Bug
-  </button>
+{stepExec.status === "Fail" && (
+  createdBugs.includes(stepExec.id) ? (
+    <span style={{color:"red"}}>🐞 Bug Created</span>
+  ) : (
+    <button
+      className="danger-btn"
+      onClick={() => quickFail(stepExec.id)}
+    >
+      Fail & Create Bug
+    </button>
+  )
 )}
-
             <textarea
               placeholder="Notes"
               value={stepExec.notes}
