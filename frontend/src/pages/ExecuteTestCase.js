@@ -367,7 +367,7 @@ const quickFail = async (stepExecutionId) => {
 
 {stepExec.status === "Fail" && (
   createdBugs.includes(stepExec.id) ? (
-    <span style={{color:"red"}}>🐞 Bug Created</span>
+    <span style={{color:"red"}}> Bug Created</span>
   ) : (
     <button
       className="danger-btn"
