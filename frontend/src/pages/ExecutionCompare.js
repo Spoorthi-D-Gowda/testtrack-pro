@@ -6,8 +6,8 @@ export default function ExecutionCompare({ testCaseId }) {
 
   const [executions, setExecutions] = useState([]);
   const token =
-    localStorage.getItem("token") ||
-    sessionStorage.getItem("token");
+  localStorage.getItem("accessToken") ||
+  sessionStorage.getItem("accessToken");
 
 useEffect(() => {
   if (!testCaseId) return;
@@ -15,11 +15,14 @@ useEffect(() => {
   const fetchHistory = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/executions/history/${testCaseId}`,
-        {
-          headers: { "x-auth-token": token },
-        }
-      );
+  `http://localhost:5000/api/executions/history/${testCaseId}`,
+  {
+    headers: {
+      "x-auth-token": token,
+      "x-project-id": localStorage.getItem("projectId")
+    }
+  }
+);
       setExecutions(res.data);
     } catch (err) {
       console.error("Failed to fetch history");

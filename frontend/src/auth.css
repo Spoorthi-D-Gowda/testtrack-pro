@@ -1,3 +1,105 @@
+/* ===== Test Step Row ===== */
+/* ===== Test Step Inputs Black Border ===== */
+.test-card .step-row input{
+  flex:1;
+  padding:12px 14px;
+  border:2px solid black !important;
+  border-radius:8px;
+  font-size:14px;
+  background:white;
+}
+.step-row{
+display:flex;
+gap:15px;
+margin-top:10px;
+}
+
+.step-row input{
+flex:1;
+padding:12px 14px;
+border:2px solid black;
+border-radius:8px;
+font-size:14px;
+background:white;
+}
+/* rows */
+.tc-row{
+display:flex;
+gap:20px;
+margin-bottom:18px;
+}
+
+.tc-row input,
+.tc-row select{
+flex:1;
+padding:12px 14px;
+border:2px solid black;
+border-radius:8px;
+font-size:14px;
+background:white;
+}
+
+/* file row */
+.tc-file-row input{
+width:100%;
+padding:10px;
+border:2px solid black;
+background:black;
+color:white;
+border-radius:8px;
+}
+/* ===== Black border boxes for test case form ===== */
+
+.test-card .tc-row input,
+.test-card .tc-row select{
+  flex:1;
+  padding:12px 14px;
+  border:2px solid black !important;
+  border-radius:8px;
+  font-size:14px;
+  background:white;
+}
+
+/* file input row */
+.test-card .tc-file-row input{
+  width:100%;
+  padding:10px;
+  border:2px solid black !important;
+  border-radius:8px;
+  color:white;
+}
+/* ===== Suite Form Row ===== */
+.test-card .suite-input-row input{
+  flex:1;
+  padding:12px 14px;
+  border:2px solid black !important;
+  border-radius:10px;
+  font-size:14px;
+  background:white;
+  outline:none;
+}
+.suite-input-row{
+  display:flex;
+  gap:25px;
+  width:100%;
+  margin-bottom:18px;
+}
+
+/* Inputs inside the row */
+.suite-input-row input{
+  flex:1;
+  padding:12px 14px;
+  border:2px solid black;   /* black border */
+  border-radius:10px;
+  font-size:14px;
+  background:white;
+  outline:none;
+}
+
+/* Optional hover/focus effect */
+.suite-input-row input:focus{
+  border:2px solid black;
+}
 .team-list{
   list-style:none;
   padding:0;
@@ -2336,6 +2438,7 @@ body {
   width: 350px;
   border-radius: 8px;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+   padding-top:10px !important;
 }
 
 .auth-card h2 {
@@ -2431,6 +2534,8 @@ body {
   align-items: center;
   justify-content: flex-start;
   margin-bottom: 15px;
+    margin-top:0;
+  padding-top:0;
 }
 .page-header h2 {
   font-size: 22px;
@@ -2480,4 +2585,25 @@ body {
 .action-btn:hover {
   text-decoration: underline;
   color: #1d4ed8;
+}
+/* login divider */
+
+.login-divider{
+  display:flex;
+  align-items:center;
+  margin:15px 0;
+}
+
+.login-divider::before,
+.login-divider::after{
+  content:"";
+  flex:1;
+  border-bottom:1px solid #ccc;
+}
+
+.login-divider span{
+  padding:0 10px;
+  font-size:14px;
+  color:#666;
+  font-weight:500;
 }

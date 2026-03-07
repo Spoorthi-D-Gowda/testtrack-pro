@@ -857,107 +857,89 @@ return (
           {/* ================= CREATE TAB ================= */}
 {activeTab === "create" && (
   <form onSubmit={addCase}>
+{/* ROW 1 */}
+<div className="tc-row">
+<input
+  placeholder="Title"
+  value={title}
+  onChange={(e) => setTitle(e.target.value)}
+  required
+/>
 
-    <input
-      placeholder="Title"
-      value={title}
-      onChange={(e) => setTitle(e.target.value)}
-      required
-    />
+<input
+  placeholder="Description"
+  value={description}
+  onChange={(e) => setDescription(e.target.value)}
+  required
+/>
+</div>
 
-    <input
+
+{/* ROW 2 */}
+<div className="tc-file-row">
+<input
   type="file"
   multiple
   onChange={(e) => setSelectedFiles(Array.from(e.target.files))}
 />
+</div>
 
-      <input
-        placeholder="Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
-        required
-      />
 
-      <input
-        placeholder="Expected Result"
-        value={expected}
-        onChange={(e) => setExpected(e.target.value)}
-        required
-      />
+{/* ROW 3 */}
+<div className="tc-row">
 
-      <select
- value={module}
- onChange={(e)=>setModule(e.target.value)}
- required
->
-
+<select value={module} onChange={(e)=>setModule(e.target.value)} required>
 <option value="">Select Module</option>
-
 {modules.map(m => (
-<option key={m.id} value={m.name}>
-{m.name}
-</option>
+<option key={m.id} value={m.name}>{m.name}</option>
 ))}
-
 </select>
 
-      <select value={priority} onChange={(e) => setPriority(e.target.value)}>
-        <option>High</option>
-        <option>Medium</option>
-        <option>Low</option>
-      </select>
+<select value={priority} onChange={(e)=>setPriority(e.target.value)}>
+<option>High</option>
+<option>Medium</option>
+<option>Low</option>
+</select>
 
-      <select value={severity} onChange={(e) => setSeverity(e.target.value)} required>
-        <option value="">Select Severity</option>
-        <option>Blocker</option>
-        <option>Critical</option>
-        <option>Major</option>
-        <option>Minor</option>
-        <option>Trivial</option>
-      </select>
+<select value={severity} onChange={(e)=>setSeverity(e.target.value)} required>
+<option value="">Select Severity</option>
+<option>Blocker</option>
+<option>Critical</option>
+<option>Major</option>
+<option>Minor</option>
+<option>Trivial</option>
+</select>
 
-      <select value={type} onChange={(e) => setType(e.target.value)} required>
-        <option value="">Select Type</option>
-        <option>Functional</option>
-        <option>Regression</option>
-        <option>Smoke</option>
-        <option>Integration</option>
-        <option>Security</option>
-        <option>Performance</option>
-      </select>
+</div>
 
-      <select value={status} onChange={(e) => setStatus(e.target.value)}>
-        <option>Pending</option>
-        <option>Pass</option>
-        <option>Fail</option>
-      </select>
 
-      <textarea
-        placeholder="Preconditions"
-        value={preconditions}
-        onChange={(e) => setPreconditions(e.target.value)}
-      />
+{/* ROW 4 */}
+<div className="tc-row">
 
-      <textarea
-        placeholder="Test Data"
-        value={testData}
-        onChange={(e) => setTestData(e.target.value)}
-      />
+<select value={type} onChange={(e)=>setType(e.target.value)} required>
+<option value="">Select Type</option>
+<option>Functional</option>
+<option>Regression</option>
+<option>Smoke</option>
+<option>Integration</option>
+<option>Security</option>
+<option>Performance</option>
+</select>
 
-      <select
- value={environment}
- onChange={(e)=>setEnvironment(e.target.value)}
->
+<select value={status} onChange={(e)=>setStatus(e.target.value)}>
+<option>Pending</option>
+<option>Pass</option>
+<option>Fail</option>
+</select>
 
+<select value={environment} onChange={(e)=>setEnvironment(e.target.value)}>
 <option value="">Select Environment</option>
-
 {environments.map(env => (
-<option key={env.id} value={env.name}>
-{env.name}
-</option>
+<option key={env.id} value={env.name}>{env.name}</option>
 ))}
-
 </select>
+
+</div>
 <h4>Custom Fields</h4>
 
 {customFields.map((field) => (
@@ -985,25 +967,29 @@ return (
         <div key={index} className="step-card">
           <p><b>Step {index + 1}</b></p>
 
-          <input
-            placeholder="Action"
-            value={step.action}
-            onChange={(e) => updateStep(index, "action", e.target.value)}
-            required
-          />
+        <div className="step-row">
 
-          <input
-            placeholder="Test Data"
-            value={step.testData}
-            onChange={(e) => updateStep(index, "testData", e.target.value)}
-          />
+<input
+  placeholder="Action"
+  value={step.action}
+  onChange={(e)=>updateStep(index,"action",e.target.value)}
+  required
+/>
 
-          <input
-            placeholder="Expected Result"
-            value={step.expected}
-            onChange={(e) => updateStep(index, "expected", e.target.value)}
-            required
-          />
+<input
+  placeholder="Test Data"
+  value={step.testData}
+  onChange={(e)=>updateStep(index,"testData",e.target.value)}
+/>
+
+<input
+  placeholder="Expected Result"
+  value={step.expected}
+  onChange={(e)=>updateStep(index,"expected",e.target.value)}
+  required
+/>
+
+</div>
 
           {stepsList.length > 1 && (
   <button

@@ -65,8 +65,9 @@ if (stepExecution.execution.testCase.projectId !== projectId) {
 // Prevent duplicate active bug
 const existingBug = await prisma.bug.findFirst({
   where: {
-    stepExecutionId,
-    executionId: stepExecution.executionId,
+    stepExecutionId: stepExecution.id,
+    testCaseId: stepExecution.execution.testCase.id,
+    projectId: projectId,
     status: {
       notIn: ["Closed", "Duplicate", "Wont_Fix"]
     }
