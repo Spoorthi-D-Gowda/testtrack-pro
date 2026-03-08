@@ -2607,3 +2607,39 @@ body {
   color:#666;
   font-weight:500;
 }
+.popup-buttons{
+display:flex;
+gap:10px;
+margin-top:20px;
+justify-content:flex-start;
+}
+
+.popup-buttons button{
+width:auto;
+}
+.selection-list{
+max-height:200px;
+overflow-y:auto;
+border:1px solid #ddd;
+border-radius:8px;
+padding:10px;
+background:white;
+}
+
+/* small scroll bar */
+.selection-list::-webkit-scrollbar{
+width:6px;
+}
+
+.selection-list::-webkit-scrollbar-track{
+background:#f1f1f1;
+}
+
+.selection-list::-webkit-scrollbar-thumb{
+background:#bbb;
+border-radius:10px;
+}
+
+.selection-list::-webkit-scrollbar-thumb:hover{
+background:#888;
+}

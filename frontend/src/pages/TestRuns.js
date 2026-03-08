@@ -19,7 +19,7 @@ const [selectedRunId, setSelectedRunId] = useState(null);
 const [showPopup, setShowPopup] = useState(false);
 const [milestones,setMilestones]=useState([]);
 const [milestoneId, setMilestoneId] = useState("");
-
+const [showAddPopup, setShowAddPopup] = useState(false);
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
@@ -38,6 +38,20 @@ useEffect(()=>{
 
 },[]);
 
+const addCasesToRun = async () => {
+
+  await api.post(
+    `/testruns/${selectedRunId}/addcases`,
+    { testCaseIds: selectedTestCases }
+  );
+  alert("Test cases added successfully");
+  setShowAddPopup(false);   // ✅ correct popup
+  setSelectedTestCases([]);
+
+  await openRunCases(selectedRunId);  // refresh assigned list
+  fetchRuns();
+};
+
   const fetchTestCases = useCallback(async () => {
   try {
     const res = await api.get(
@@ -49,6 +63,12 @@ useEffect(()=>{
     console.error(err);
   }
 }, [token]);
+
+const loadAllTestCases = async () => {
+  const res = await api.get("/testcases");
+  setTestCases(res.data);
+};
+
   // ================= FETCH USERS (TESTERS) =================
   const fetchUsers = useCallback(async () => {
     try {
@@ -233,24 +253,29 @@ onChange={(e)=>setMilestoneId(e.target.value)}
 <h4>Select Testers</h4>
 
 <div className="selection-list">
-  {users.map((tester) => (
-    <label key={tester.id} className="selection-item">
-      <input
-        type="checkbox"
-        value={tester.id}
-        checked={selectedTesters.includes(tester.id)}
-        onChange={() => handleTesterSelect(tester.id)}
-      />
+  {users
+    .filter(user => user.role === "tester")
+    .map((tester) => (
+      <label key={tester.id} className="selection-item">
 
-      <div className="selection-content">
-        <span className="selection-title">
-          {tester.name}
-        </span>
-        <span className="selection-sub">
-          {tester.email}
-        </span>
-      </div>
-    </label>
+        <input
+          type="checkbox"
+          value={tester.id}
+          checked={selectedTesters.includes(tester.id)}
+          onChange={() => handleTesterSelect(tester.id)}
+        />
+
+        <div className="selection-content">
+          <span className="selection-title">
+            {tester.name}
+          </span>
+
+          <span className="selection-sub">
+            {tester.email}
+          </span>
+        </div>
+
+      </label>
   ))}
 </div>
 
@@ -384,14 +409,11 @@ onChange={(e)=>setMilestoneId(e.target.value)}
 <div className="popup-side-actions">
 <button
   className="add-btn"
-  onClick={() => {
-    navigate("/dashboard", {
-      state: {
-        activeSection: "testcases",
-        testCaseTab: "create"
-      }
-    });
-  }}
+ onClick={async () => {
+  setSelectedTestCases([]);  // reset selection
+  await loadAllTestCases();
+  setShowAddPopup(true);
+}}
 >
   + Add Test Case
 </button>
@@ -405,6 +427,55 @@ onChange={(e)=>setMilestoneId(e.target.value)}
   </div>
 )}
 
+{showAddPopup && (
+  <div className="modal-overlay">
+    <div className="modal-box">
+
+      <h3>Select Test Cases</h3>
+
+      {testCases.map(tc => (
+        <label key={tc.id} className="selection-item">
+
+          <input
+            type="checkbox"
+            checked={selectedTestCases.includes(tc.id)}
+            onChange={() => handleTestCaseSelect(tc.id)}
+          />
+
+          <div className="selection-content">
+            <span className="selection-title">
+              {tc.testCaseId}
+            </span>
+
+            <span className="selection-sub">
+              {tc.title}
+            </span>
+          </div>
+
+        </label>
+      ))}
+
+     <div className="popup-buttons">
+
+<button
+  className="success-btn"
+  onClick={addCasesToRun}
+>
+  Done
+</button>
+
+<button
+  className="popup-small-btn"
+  onClick={() => setShowAddPopup(false)}
+>
+  Close
+</button>
+
+</div>
+
+    </div>
+  </div>
+)}
       </div>
     </div>
   );
