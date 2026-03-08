@@ -172,6 +172,23 @@ if (existing) {
   }
 );
 
+router.post("/:runId/addcases", async (req,res)=>{
+
+ const runId = Number(req.params.runId);
+ const { testCaseIds } = req.body;
+
+ const data = testCaseIds.map(id => ({
+   testRunId: runId,
+   testCaseId: id
+ }));
+
+ await prisma.testRunTestCase.createMany({
+   data
+ });
+
+ res.json({msg:"Test cases added"});
+});
+
 /*
 ====================================================
 GET RUN PROGRESS

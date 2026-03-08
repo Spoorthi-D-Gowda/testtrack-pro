@@ -19,6 +19,20 @@ const load = async () => {
  try{
   const res = await api.get("/milestones");
   setMilestones(res.data);
+
+  const progressMap = {};
+
+  for (const m of res.data) {
+    try{
+      const pr = await api.get(`/milestones/${m.id}/progress`);
+      progressMap[m.id] = pr.data;
+    }catch(err){
+      progressMap[m.id] = { passRate: 0 };
+    }
+  }
+
+  setProgress(progressMap);
+
  }catch(err){
   console.error("Milestones load error:",err);
   alert("Failed to load milestones");

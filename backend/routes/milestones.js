@@ -59,33 +59,28 @@ router.get("/:id/progress", auth, async (req,res)=>{
 
   const milestoneId = Number(req.params.id);
 
-  const milestone = await prisma.milestone.findUnique({
-    where:{id:milestoneId}
-  });
-
-  if(!milestone){
-    return res.status(404).json({
-      msg:"Milestone not found"
-    });
-  }
-
   const runs = await prisma.testRun.findMany({
-    where:{milestoneId},
-    include:{executions:true}
+    where:{ milestoneId },
+    include:{ executions:true }
   });
 
-  let total=0;
-  let pass=0;
-  let fail=0;
+  const latestByCase = {};
 
   runs.forEach(run=>{
     run.executions.forEach(exec=>{
-      total++;
-
-      if(exec.status==="Pass") pass++;
-      if(exec.status==="Fail") fail++;
+      if(!latestByCase[exec.testCaseId] ||
+         new Date(exec.completedAt) >
+         new Date(latestByCase[exec.testCaseId].completedAt)){
+        latestByCase[exec.testCaseId] = exec;
+      }
     });
   });
+
+  const executions = Object.values(latestByCase);
+
+  const total = executions.length;
+  const pass = executions.filter(e=>e.status==="Pass").length;
+  const fail = executions.filter(e=>e.status==="Fail").length;
 
   const passRate = total===0 ? 0 : Math.round((pass/total)*100);
 
