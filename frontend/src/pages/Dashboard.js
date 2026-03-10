@@ -18,6 +18,7 @@ import CreateProject from "./CreateProject";
 import MyAssignedProjects from "./MyAssignedProjects";
 import ProjectSettings from "./ProjectSettings";
 import Milestones from "./Milestones";
+import AdminUsers from "./AdminUsers";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -264,7 +265,17 @@ useEffect(() => {
     <span className="arrow">›</span>
   </button>
 )}
-
+{role === "admin" && (
+  <button
+    className="nav-btn"
+    onClick={() => {
+      setActiveSection("adminUsers");
+    }}
+  >
+    Admin Workspace
+    <span className="arrow">›</span>
+  </button>
+)}
   {(role === "tester" || role === "admin") && (
 <button
   className="nav-btn"
@@ -792,7 +803,9 @@ useEffect(() => {
 {activeSection === "milestones" && (
   <Milestones />
 )}
-
+{activeSection === "adminUsers" && (
+  <AdminUsers />
+)}
 </div>
 
     </div>

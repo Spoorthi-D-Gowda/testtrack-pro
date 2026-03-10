@@ -2643,3 +2643,94 @@ border-radius:10px;
 .selection-list::-webkit-scrollbar-thumb:hover{
 background:#888;
 }
+/* ===== ADMIN USERS PAGE ===== */
+
+.users-page{
+margin-top:10px;
+}
+
+.users-title{
+font-size:22px;
+font-weight:600;
+margin-bottom:15px;
+color:#1f2937;
+}
+
+/* white container */
+
+.users-box{
+background:white;
+padding:25px;
+border-radius:14px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+/* table */
+
+.users-table{
+width:100%;
+border-collapse:collapse;
+}
+
+.users-table th{
+text-align:left;
+padding:14px;
+font-size:14px;
+color:#374151;
+border-bottom:2px solid #e5e7eb;
+}
+
+.users-table td{
+padding:14px;
+font-size:14px;
+border-bottom:1px solid #f3f4f6;
+}
+
+/* hover row */
+
+.users-table tr:hover{
+background:#f9fafb;
+}
+
+/* buttons */
+
+.accept-btn{
+background:#16a34a;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+margin-right:6px;
+}
+
+.decline-btn{
+background:#dc2626;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+margin-right:6px;
+}
+
+.remove-btn{
+background:black;
+color:white;
+border:none;
+padding:6px 12px;
+border-radius:6px;
+cursor:pointer;
+}
+
+.accept-btn:hover{
+background:#15803d;
+}
+
+.decline-btn:hover{
+background:#b91c1c;
+}
+
+.remove-btn:hover{
+background:#333;
+}
