@@ -1,5 +1,6 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
+const { notifyTestAssigned } = require("../utils/notificationService");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -97,6 +98,26 @@ if (testerIds && testerIds.length > 0) {
     }
   }
 });
+// 🔔 Notify assigned testers
+if (testerIds && testerIds.length > 0) {
+
+  const testers = await prisma.user.findMany({
+    where: {
+      id: { in: testerIds }
+    }
+  });
+
+  for (const tester of testers) {
+    if (tester?.email) {
+      try {
+        await notifyTestAssigned(tester.email, name);
+      } catch (err) {
+        console.error("Notification error:", err);
+      }
+    }
+  }
+
+}
       res.status(201).json({
         msg: "Test Run created successfully",
         data: testRun,
@@ -159,7 +180,18 @@ if (existing) {
           testerId,
         },
       });
+// 🔔 Notify tester about assignment
+const tester = await prisma.user.findUnique({
+  where: { id: testerId }
+});
 
+if (tester?.email) {
+  try {
+    await notifyTestAssigned(tester.email, run.name);
+  } catch (err) {
+    console.error("Notification error:", err);
+  }
+}
       res.json({
         msg: "Tester assigned successfully",
         data: assignment,
@@ -172,15 +204,19 @@ if (existing) {
   }
 );
 
-router.post("/:runId/addcases", async (req,res)=>{
+router.post("/:runId/addcases", auth, role(["admin"]), async (req,res)=>{
 
  const runId = Number(req.params.runId);
  const { testCaseIds } = req.body;
 
- const data = testCaseIds.map(id => ({
-   testRunId: runId,
-   testCaseId: id
- }));
+if (!testCaseIds || testCaseIds.length === 0) {
+  return res.status(400).json({ msg: "No test cases provided" });
+}
+
+const data = testCaseIds.map(id => ({
+  testRunId: runId,
+  testCaseId: id
+}));
 
  await prisma.testRunTestCase.createMany({
    data
