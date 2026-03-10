@@ -71,6 +71,7 @@ router.post(
           role,
           verifyToken,
           verifyExpiry,
+          approvalStatus: "pending"
         },
       });
 
@@ -201,6 +202,18 @@ router.post(
         });
       }
 
+      // 🚨 3️⃣ Check admin approval
+if (user.approvalStatus === "pending") {
+  return res.status(403).json({
+    msg: "Please wait for admin approval",
+  });
+}
+
+if (user.approvalStatus === "rejected") {
+  return res.status(403).json({
+    msg: "Your registration was rejected by admin",
+  });
+}
       const isMatch = await bcrypt.compare(password, user.password);
 
       // ❌ Wrong password
@@ -631,7 +644,26 @@ router.get("/users", authMiddleware, role(["admin","tester"]), async (req, res) 
     }
   }
 );
+router.get("/all-users", authMiddleware, adminMiddleware, async (req, res) => {
 
+  const users = await prisma.user.findMany({
+      where:{
+    approvalStatus:{
+      not:"removed"
+    }
+  },
+    select:{
+      id:true,
+      name:true,
+      email:true,
+      role:true,
+      approvalStatus:true,
+      isVerified:true
+    }
+  })
+
+  res.json(users)
+})
 router.get("/developers", authMiddleware, async (req, res) => {
   try {
     const developers = await prisma.user.findMany({
@@ -648,4 +680,55 @@ router.get("/developers", authMiddleware, async (req, res) => {
     res.status(500).json({ msg: "Failed to fetch developers" });
   }
 });
+router.put("/approve/:id", authMiddleware, adminMiddleware, async (req,res)=>{
+
+  const id = Number(req.params.id)
+
+  await prisma.user.update({
+    where:{id},
+    data:{approvalStatus:"approved"}
+  })
+
+  res.json({msg:"User approved"})
+})
+router.put("/reject/:id", authMiddleware, adminMiddleware, async (req,res)=>{
+
+  try{
+
+    const id = Number(req.params.id)
+
+    await prisma.user.update({
+      where:{ id },
+      data:{ approvalStatus:"rejected" }
+    })
+
+    res.json({msg:"User rejected"})
+
+  }catch(err){
+    console.error(err)
+    res.status(500).json({msg:"Reject failed"})
+  }
+
+})
+router.delete("/remove/:id", authMiddleware, adminMiddleware, async (req,res)=>{
+
+  try{
+
+    const id = Number(req.params.id)
+
+await prisma.user.update({
+  where:{ id },
+  data:{
+    approvalStatus:"removed"
+  }
+})
+
+    res.json({msg:"User removed"})
+
+  }catch(err){
+    console.error(err)
+    res.status(500).json({msg:"Cannot delete user with existing data"})
+  }
+
+})
 module.exports = router;
