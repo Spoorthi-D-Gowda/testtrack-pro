@@ -21,7 +21,7 @@ const session = require("express-session");
 const passport = require("./config/passport");
 const projectRoutes = require("./routes/project");
 const milestoneRoutes = require("./routes/milestones");
-
+const bugComments = require("./routes/bugComments");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -53,7 +53,7 @@ app.use("/api/reports", reportRoutes);
 app.use("/api/reports", bugReports);
 app.use("/api/projects", projectRoutes);
 app.use("/api/milestones", milestoneRoutes);
-
+app.use("/api/bugs", bugComments);
 app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");
 });

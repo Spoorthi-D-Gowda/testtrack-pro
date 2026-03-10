@@ -12,7 +12,8 @@ export default function Bugs({ type }) {
 const [filterSeverity, setFilterSeverity] = useState("");
 const [filterStatus, setFilterStatus] = useState("");
 const [sortBy, setSortBy] = useState("");
-
+const [comments, setComments] = useState({});
+const [newComment, setNewComment] = useState({});
   const token =
     localStorage.getItem("token") ||
     sessionStorage.getItem("token");
@@ -50,7 +51,38 @@ const fetchBugs = async () => {
     console.error("FETCH BUGS ERROR:", err);
   }
 };
+const addComment = async (bugId) => {
+  try {
 
+    const text = newComment[bugId];
+
+    if (!text || text.trim() === "") {
+      alert("Comment cannot be empty");
+      return;
+    }
+
+    const res = await api.post(
+      `http://localhost:5000/api/bugs/${bugId}/comment`,
+      { text },
+      {
+        headers: {
+          "x-auth-token": token,
+          "x-project-id": localStorage.getItem("projectId")
+        }
+      }
+    );
+
+    alert("Comment added");
+
+    setNewComment({
+      ...newComment,
+      [bugId]: ""
+    });
+
+  } catch (err) {
+    alert(err.response?.data?.msg || "Failed to add comment");
+  }
+};
   // ================= FETCH DEVELOPERS =================
 const fetchDevelopers = async () => {
   try {
@@ -288,6 +320,7 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
   </div>
 
 <div className="card-actions">
+
 {role === "developer" &&
   (bug.status === "Open" || bug.status === "Reopened") && (
    <>
@@ -341,10 +374,44 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
   </>
 )}
 {role === "admin" && bug.status === "Verified" && (
-  <button onClick={() => updateStatus(bug.id, "Closed")}>
+  <button 
+  className="small-action-btn"
+  onClick={() => updateStatus(bug.id, "Closed")}>
     Close
   </button>
 )}
+</div>
+{/* ================= COMMENTS ================= */}
+
+<div style={{ marginTop: "15px" }}>
+
+  <label style={{ fontWeight: "bold" }}>Add Comment</label>
+
+  <textarea
+    placeholder="Write comment... use @username to mention"
+    value={newComment[bug.id] || ""}
+    onChange={(e) =>
+      setNewComment({
+        ...newComment,
+        [bug.id]: e.target.value
+      })
+    }
+    style={{
+      width: "100%",
+      marginTop: "5px",
+      padding: "8px",
+      borderRadius: "6px"
+    }}
+  />
+
+  <button
+    className="execute-btn"
+    style={{ marginTop: "6px" }}
+    onClick={() => addComment(bug.id)}
+  >
+    Add Comment
+  </button>
+
 </div>
 </div>
         ))}

@@ -1,5 +1,10 @@
 const express = require("express");
 const { PrismaClient, BugPriority, BugSeverity, BugStatus } = require("@prisma/client");
+const {
+  notifyBugAssigned,
+  notifyBugStatusChange,
+  notifyRetest
+} = require("../utils/notificationService");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -329,6 +334,14 @@ const bug = await prisma.bug.findFirst({
           status: BugStatus.Open,
         },
       });
+      // 🔔 Send notification email
+if (developer?.email) {
+  try {
+    await notifyBugAssigned(developer.email, bug.bugId);
+  } catch (err) {
+    console.error("Notification error:", err);
+  }
+}
 
       res.json({
         msg: "Bug assigned successfully",
@@ -414,6 +427,37 @@ const bug = await prisma.bug.findFirst({
                 : bug.description,
 },
       });
+      // 🔔 Notify reporter + developer about status change
+const reporter = await prisma.user.findUnique({
+  where: { id: bug.reportedById }
+});
+
+const developer = bug.assignedToId
+  ? await prisma.user.findUnique({
+      where: { id: bug.assignedToId }
+    })
+  : null;
+
+const recipients = new Set();
+
+if (reporter?.email) recipients.add(reporter.email);
+if (developer?.email) recipients.add(developer.email);
+
+for (const email of recipients) {
+  try {
+    await notifyBugStatusChange(email, bug.bugId, status);
+  } catch (err) {
+    console.error("Notification error:", err);
+  }
+}
+// 🔔 Re-test notification
+if (status === "Fixed" && reporter?.email) {
+  try {
+    await notifyRetest(reporter.email, bug.bugId);
+  } catch (err) {
+    console.error("Notification error:", err);
+  }
+}
 
      res.json({
   msg: `Bug ${status.replace("_", " ")} successfully`,
