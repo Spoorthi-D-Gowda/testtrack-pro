@@ -2,6 +2,20 @@ import { useEffect, useState } from "react";
 import api from "../api";
 import { useNavigate } from "react-router-dom";
 import { useCallback } from "react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  LineChart,
+  Line,
+  ResponsiveContainer
+} from "recharts";
 import TestCasesManager from "./TestCases";
 import TestSuites from "./TestSuites";
 import TestRuns from "./TestRuns";
@@ -19,6 +33,7 @@ import MyAssignedProjects from "./MyAssignedProjects";
 import ProjectSettings from "./ProjectSettings";
 import Milestones from "./Milestones";
 import AdminUsers from "./AdminUsers";
+import NotificationBell from "../components/NotificationBell";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -177,6 +192,29 @@ useEffect(() => {
   return () => clearInterval(interval);
 
 }, [logout]);
+const executionData = stats
+  ? [
+      { name: "Passed", value: stats.passedTestCases },
+      { name: "Failed", value: stats.failedTestCases },
+      { name: "Blocked", value: stats.blockedTestCases },
+      { name: "Skipped", value: stats.skippedTestCases }
+    ]
+  : [];
+
+const bugTestData = stats
+  ? [
+      { name: "Test Cases", value: stats.totalTestCases },
+      { name: "Bugs", value: stats.totalBugs }
+    ]
+  : [];
+
+const trendData = stats
+  ? [
+      { name: "Passed", value: stats.passedTestCases },
+      { name: "Failed", value: stats.failedTestCases },
+      { name: "Blocked", value: stats.blockedTestCases }
+    ]
+  : [];
 
   return (
     <div className="dashboard-wrapper">
@@ -497,13 +535,25 @@ useEffect(() => {
   </div>
 
 </div>
+<div className="header-right">
+<div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+
+  <NotificationBell />
 
   <div className="profile-container">
     <div
   className="profile-icon"
   onClick={() => setShowProfileMenu(!showProfileMenu)}
 >
-  <img src="/assets/profile.png" alt="profile" />
+ <svg
+  xmlns="http://www.w3.org/2000/svg"
+  width="24"
+  height="24"
+  fill="white"
+  viewBox="0 0 24 24"
+>
+  <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8V22h19.2v-2.8c0-3.2-6.4-4.8-9.6-4.8z"/>
+</svg>
 </div>
      {showProfileMenu && (
       <div className="profile-dropdown">
@@ -543,7 +593,9 @@ useEffect(() => {
          </div>
     )}
   </div>
+  </div>
 </div>
+ </div>
 )}
 
 {/* PAGE CONTENT */}
@@ -660,79 +712,82 @@ useEffect(() => {
 
 </div>
 
-      {/* ===== ANALYSIS + USERS ===== */}
-      <div className="middle-section">
-{role === "admin" && (
- <div
-  className="widget-card"
+{/* ===== DASHBOARD CHARTS ===== */}
+
+<div
   style={{
-    background: "#e6f6ff",
-    padding: "20px",
-    borderRadius: "12px",
-    minHeight: "200px",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
-    transition: "all 0.25s ease"
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+    marginTop: "30px"
   }}
 >
 
+{/* Execution Status Pie Chart */}
 
-    <h3>Projects</h3>
-<div className="project-list-scroll">
-{projects.map((p) => (
-  <div
-    key={p.id}
-    style={{
-      padding: "12px",
-      borderBottom: "1px solid #cce5ff"
-    }}
-  >
-    <div style={{ fontWeight: "bold" }}>
-      {p.name}
-    </div>
-  </div>
-))}
-</div>
-  </div>
-)}
- 
-       {/* Testers */}
 <div className="widget-card">
-  <h3>Testers</h3>
-  <ul className="team-list">
-    {stats.testers.map((t) => (
-      <li key={t.id} className="team-item">
-        <div className="team-email">{t.email}</div>
-      </li>
-    ))}
-  </ul>
+<h3>Execution Status</h3>
+
+<ResponsiveContainer width="100%" height={250}>
+<PieChart>
+<Pie
+data={executionData}
+dataKey="value"
+outerRadius={90}
+label
+>
+<Cell fill="#22c55e" />
+<Cell fill="#ef4444" />
+<Cell fill="#f59e0b" />
+<Cell fill="#64748b" />
+</Pie>
+<Tooltip />
+</PieChart>
+</ResponsiveContainer>
+
 </div>
-        {/* Developers */}
+
+
+{/* Bugs vs Test Cases Bar Chart */}
+
 <div className="widget-card">
-  <h3>Developers</h3>
-  <ul className="team-list">
-    {stats.developers.map((d) => (
-      <li key={d.id} className="team-item">
-        <div className="team-email">{d.email}</div>
-      </li>
-    ))}
-  </ul>
+<h3>Bugs vs Test Cases</h3>
+
+<ResponsiveContainer width="100%" height={250}>
+<BarChart data={bugTestData}>
+<CartesianGrid strokeDasharray="3 3" />
+<XAxis dataKey="name" />
+<YAxis />
+<Tooltip />
+<Bar dataKey="value" fill="#2563eb" />
+</BarChart>
+</ResponsiveContainer>
+
 </div>
 
-{/* Admins - Only visible to admin dashboard */}
-{role === "admin" && (
-  <div className="widget-card">
-    <h3>Admins</h3>
-    <ul className="team-list">
-      {stats.admins?.map(a => (
-        <li key={a.id} className="team-item">
-          <div className="team-email">{a.email}</div>
-        </li>
-      ))}
-    </ul>
-  </div> 
-)}
+</div>
 
-     </div>
+
+{/* ===== EXECUTION TREND LINE ===== */}
+
+<div
+className="widget-card"
+style={{ marginTop: "20px" }}
+>
+<h3>Execution Overview</h3>
+
+<ResponsiveContainer width="100%" height={300}>
+<LineChart data={trendData}>
+<CartesianGrid strokeDasharray="3 3" />
+<XAxis dataKey="name" />
+<YAxis />
+<Tooltip />
+<Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={3} />
+</LineChart>
+</ResponsiveContainer>
+
+</div>
+
       </>
     )}
 

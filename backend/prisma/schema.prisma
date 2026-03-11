@@ -69,6 +69,7 @@ model User {
   projects           Project[]           @relation("CreatedProjects")
   projectAssignments ProjectTester[]
   bugComments BugComment[]
+  notifications Notification[]
 }
 
 model TestCase {
@@ -497,4 +498,18 @@ model BugComment {
 
   bug  Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
+}
+model Notification {
+  id Int @id @default(autoincrement())
+
+  userId Int
+  title  String
+  message String
+  link   String?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
