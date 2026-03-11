@@ -5,6 +5,7 @@ const {
   notifyBugStatusChange,
   notifyRetest
 } = require("../utils/notificationService");
+const { createNotification } = require("../utils/inAppNotification");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -342,6 +343,12 @@ if (developer?.email) {
     console.error("Notification error:", err);
   }
 }
+await createNotification(
+  developerId,
+  "Bug Assigned",
+  `New bug ${bug.bugId} assigned to you`,
+  `/bugs/${bugId}`
+);
 
       res.json({
         msg: "Bug assigned successfully",
@@ -450,6 +457,17 @@ for (const email of recipients) {
     console.error("Notification error:", err);
   }
 }
+// In-app notification
+const users = [bug.reportedById, bug.assignedToId].filter(Boolean);
+
+for (const uid of users) {
+  await createNotification(
+    uid,
+    "Bug Status Updated",
+    `Bug ${bug.bugId} status changed to ${status}`,
+    `/bugs/${bugId}`
+  );
+}
 // 🔔 Re-test notification
 if (status === "Fixed" && reporter?.email) {
   try {
@@ -457,6 +475,14 @@ if (status === "Fixed" && reporter?.email) {
   } catch (err) {
     console.error("Notification error:", err);
   }
+}
+if (status === "Fixed") {
+  await createNotification(
+    bug.reportedById,
+    "Re-test Requested",
+    `Re-test requested for ${bug.bugId}`,
+    `/bugs/${bugId}`
+  );
 }
 
      res.json({

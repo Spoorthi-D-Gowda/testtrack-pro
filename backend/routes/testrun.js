@@ -1,6 +1,7 @@
 const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { notifyTestAssigned } = require("../utils/notificationService");
+const { createNotification } = require("../utils/inAppNotification");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -115,6 +116,12 @@ if (testerIds && testerIds.length > 0) {
         console.error("Notification error:", err);
       }
     }
+    await createNotification(
+  tester.id,
+  "Test Run Assigned",
+  `Test run '${name}' assigned to you`,
+  `/testruns/${testRun.id}`
+);
   }
 
 }
@@ -192,6 +199,12 @@ if (tester?.email) {
     console.error("Notification error:", err);
   }
 }
+await createNotification(
+  testerId,
+  "Test Run Assigned",
+  `Test run '${run.name}' assigned to you`,
+  `/testruns/${runId}`
+);
       res.json({
         msg: "Tester assigned successfully",
         data: assignment,
