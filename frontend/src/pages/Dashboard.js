@@ -34,6 +34,7 @@ import ProjectSettings from "./ProjectSettings";
 import Milestones from "./Milestones";
 import AdminUsers from "./AdminUsers";
 import NotificationBell from "../components/NotificationBell";
+import NotificationSettingsModal from "../components/NotificationSettingsModal";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
  const [stats, setStats] = useState(null);
@@ -51,6 +52,8 @@ const [selectedProject, setSelectedProject] = useState(
 const [showProfileMenu, setShowProfileMenu] = useState(false);
   const navigate = useNavigate();
 const [showProjects, setShowProjects] = useState(false);
+const [showNotificationSettings,setShowNotificationSettings]
+= useState(false);
   const role =
     localStorage.getItem("role") ||
     sessionStorage.getItem("role");
@@ -567,6 +570,15 @@ const trendData = stats
           Change Password
         </button>
 
+          <button
+onClick={()=>{
+setShowNotificationSettings(true);
+setShowProfileMenu(false);
+}}
+>
+Notification Settings
+</button>
+
         <button onClick={logout}>
           Logout
         </button>
@@ -860,6 +872,13 @@ style={{ marginTop: "20px" }}
 )}
 {activeSection === "adminUsers" && (
   <AdminUsers />
+)}
+{showNotificationSettings && (
+
+<NotificationSettingsModal
+onClose={()=>setShowNotificationSettings(false)}
+/>
+
 )}
 </div>
 

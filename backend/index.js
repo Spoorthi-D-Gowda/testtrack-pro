@@ -23,6 +23,7 @@ const projectRoutes = require("./routes/project");
 const milestoneRoutes = require("./routes/milestones");
 const bugComments = require("./routes/bugComments");
 const notificationRoutes = require("./routes/notification");
+const notificationPreferences =require("./routes/notificationPreferences");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -60,7 +61,10 @@ app.get("/", (req, res) => {
   res.send("TestTrack Pro API Running ");
 });
 app.use("/uploads", express.static("uploads"));
-
+app.use(
+  "/api/notification-preferences",
+  notificationPreferences
+);
 app.get("/api/profile", authMiddleware, (req, res) => {
   res.json({
     msg: "Welcome to protected route ",

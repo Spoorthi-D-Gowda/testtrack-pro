@@ -1,0 +1,2 @@
+title,description,module,priority,severity,type,status,preconditions,testData,environment,stepAction,stepExpected
+Login Test,Verify login,Auth,High,Critical,Functional,Draft,User exists,email/pass,Chrome,Open login page,Page opens
