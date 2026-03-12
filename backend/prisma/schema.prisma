@@ -35,47 +35,48 @@ enum BugStatus {
 }
 
 model User {
-  id                 Int                 @id @default(autoincrement())
-  name               String
-  email              String              @unique
-  password           String
-  role               String
-  isVerified         Boolean             @default(false)
-   approvalStatus String   @default("pending")
+  id             Int     @id @default(autoincrement())
+  name           String
+  email          String  @unique
+  password       String
+  role           String
+  isVerified     Boolean @default(false)
+  approvalStatus String  @default("pending")
   // pending | approved | rejected
 
-  verifyToken        String?
-  verifyExpiry       DateTime?
-  createdAt          DateTime            @default(now())
-  resetExpiry        DateTime?
-  resetToken         String?
-  testCases          TestCase[]
-  versions           TestCaseVersion[]
-  templates          TestCaseTemplate[]
-  testSuites         TestSuite[]
-  executions         TestExecution[]
-  createdRuns        TestRun[]           @relation("CreatedRuns")
-  assignments        TestRunAssignment[]
-  reportedBugs       Bug[]               @relation("ReportedBugs")
-  assignedBugs       Bug[]               @relation("AssignedBugs")
-  suiteExecutions    SuiteExecution[]
-  failedAttempts     Int                 @default(0)
-  lockUntil          DateTime?
-  passwordHistory    PasswordHistory[]
-  refreshToken       String?
-  tokenVersion       Int                 @default(0)
-  googleId           String?             @unique
-  githubId           String?             @unique
-  projects           Project[]           @relation("CreatedProjects")
-  projectAssignments ProjectTester[]
-  bugComments BugComment[]
-  notifications Notification[]
+  verifyToken            String?
+  verifyExpiry           DateTime?
+  createdAt              DateTime                @default(now())
+  resetExpiry            DateTime?
+  resetToken             String?
+  testCases              TestCase[]
+  versions               TestCaseVersion[]
+  templates              TestCaseTemplate[]
+  testSuites             TestSuite[]
+  executions             TestExecution[]
+  createdRuns            TestRun[]               @relation("CreatedRuns")
+  assignments            TestRunAssignment[]
+  reportedBugs           Bug[]                   @relation("ReportedBugs")
+  assignedBugs           Bug[]                   @relation("AssignedBugs")
+  suiteExecutions        SuiteExecution[]
+  failedAttempts         Int                     @default(0)
+  lockUntil              DateTime?
+  passwordHistory        PasswordHistory[]
+  refreshToken           String?
+  tokenVersion           Int                     @default(0)
+  googleId               String?                 @unique
+  githubId               String?                 @unique
+  projects               Project[]               @relation("CreatedProjects")
+  projectAssignments     ProjectTester[]
+  bugComments            BugComment[]
+  notifications          Notification[]
+  notificationPreference NotificationPreference?
 }
 
 model TestCase {
   id Int @id @default(autoincrement())
 
-  testCaseId  String 
+  testCaseId String
 
   title       String
   description String
@@ -112,17 +113,18 @@ model TestCase {
 
   updatedById Int?
 
-  steps       TestStep[]
-  versions    TestCaseVersion[]
-  attachments Attachment[]
-  suites      SuiteTestCase[]
-  executions  TestExecution[]
-  runs        TestRunTestCase[]
-  bugs        Bug[]
-  projectId   Int
-  project     Project           @relation(fields: [projectId], references: [id])
+  steps             TestStep[]
+  versions          TestCaseVersion[]
+  attachments       Attachment[]
+  suites            SuiteTestCase[]
+  executions        TestExecution[]
+  runs              TestRunTestCase[]
+  bugs              Bug[]
+  projectId         Int
+  project           Project                    @relation(fields: [projectId], references: [id])
   customFieldValues TestCaseCustomFieldValue[]
-   @@unique([projectId, testCaseId])
+
+  @@unique([projectId, testCaseId])
 }
 
 model TestCaseVersion {
@@ -270,7 +272,7 @@ model TestRun {
   projectId   Int
   project     Project             @relation(fields: [projectId], references: [id])
   milestoneId Int?
-  milestone   Milestone?  @relation(fields: [milestoneId], references: [id])
+  milestone   Milestone?          @relation(fields: [milestoneId], references: [id])
 }
 
 model TestRunAssignment {
@@ -344,7 +346,7 @@ model Bug {
   attachments BugAttachment[]
   projectId   Int
   project     Project         @relation(fields: [projectId], references: [id])
-  comments BugComment[]
+  comments    BugComment[]
 }
 
 model BugAttachment {
@@ -399,7 +401,7 @@ model Project {
   suites    TestSuite[]
   testRuns  TestRun[]
 
-  milestones Milestone[]   
+  milestones Milestone[]
 
   createdAt DateTime @default(now())
 
@@ -432,8 +434,8 @@ model ProjectCustomField {
   type      String // text, dropdown, number
   options   String[] @default([])
 
-  project Project @relation(fields: [projectId], references: [id])
-  values TestCaseCustomFieldValue[]
+  project Project                    @relation(fields: [projectId], references: [id])
+  values  TestCaseCustomFieldValue[]
 }
 
 model ProjectModule {
@@ -460,6 +462,7 @@ model ProjectWorkflow {
 
   project Project @relation(fields: [projectId], references: [id])
 }
+
 model TestCaseCustomFieldValue {
   id Int @id @default(autoincrement())
 
@@ -468,27 +471,29 @@ model TestCaseCustomFieldValue {
 
   value String
 
-  testCase TestCase @relation(fields: [testCaseId], references: [id])
+  testCase TestCase           @relation(fields: [testCaseId], references: [id])
   field    ProjectCustomField @relation(fields: [fieldId], references: [id])
 
   @@unique([testCaseId, fieldId])
 }
+
 model Milestone {
   id Int @id @default(autoincrement())
 
-  name String
+  name        String
   description String?
 
-  targetDate DateTime
+  targetDate     DateTime
   targetPassRate Int
 
   projectId Int
-  project Project @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
 
   runs TestRun[]
 
   createdAt DateTime @default(now())
 }
+
 model BugComment {
   id        Int      @id @default(autoincrement())
   bugId     Int
@@ -499,17 +504,48 @@ model BugComment {
   bug  Bug  @relation(fields: [bugId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
 }
+
 model Notification {
   id Int @id @default(autoincrement())
 
-  userId Int
-  title  String
+  userId  Int
+  title   String
   message String
-  link   String?
+  link    String?
 
   isRead Boolean @default(false)
 
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id Int @id @default(autoincrement())
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
+
+  // Bug assignment
+  bugAssignedEmail Boolean @default(true)
+  bugAssignedInApp Boolean @default(true)
+
+  // Bug status updates
+  bugStatusEmail Boolean @default(true)
+  bugStatusInApp Boolean @default(true)
+
+  // Retest notifications
+  retestEmail Boolean @default(true)
+  retestInApp Boolean @default(true)
+
+  // Test run assignment
+  testRunEmail Boolean @default(true)
+  testRunInApp Boolean @default(true)
+
+  // Quiet hours
+  quietStart String?
+  quietEnd   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

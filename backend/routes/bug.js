@@ -6,6 +6,7 @@ const {
   notifyRetest
 } = require("../utils/notificationService");
 const { createNotification } = require("../utils/inAppNotification");
+const { isQuietHours } = require("../utils/quietHours");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -336,20 +337,33 @@ const bug = await prisma.bug.findFirst({
         },
       });
       // 🔔 Send notification email
-if (developer?.email) {
-  try {
-    await notifyBugAssigned(developer.email, bug.bugId);
-  } catch (err) {
-    console.error("Notification error:", err);
-  }
-}
-await createNotification(
-  developerId,
-  "Bug Assigned",
-  `New bug ${bug.bugId} assigned to you`,
-  `/bugs/${bugId}`
-);
+// 🔔 Send notification (respect preferences)
 
+let pref = await prisma.notificationPreference.findUnique({
+  where: { userId: developerId }
+});
+
+// create default preference if missing
+if (!pref) {
+  pref = await prisma.notificationPreference.create({
+    data: { userId: developerId }
+  });
+}
+
+// email notification
+if (pref.bugAssignedEmail && !isQuietHours(pref)) {
+  await notifyBugAssigned(developer.email, bug.bugId);
+}
+
+// in-app notification
+if (pref.bugAssignedInApp) {
+  await createNotification(
+    developerId,
+    "Bug Assigned",
+    `New bug ${bug.bugId} assigned to you`,
+    `/bugs/${bugId}`
+  );
+}
       res.json({
         msg: "Bug assigned successfully",
         bug: updatedBug,
@@ -450,41 +464,74 @@ const recipients = new Set();
 if (reporter?.email) recipients.add(reporter.email);
 if (developer?.email) recipients.add(developer.email);
 
-for (const email of recipients) {
-  try {
-    await notifyBugStatusChange(email, bug.bugId, status);
-  } catch (err) {
-    console.error("Notification error:", err);
-  }
-}
-// In-app notification
-const users = [bug.reportedById, bug.assignedToId].filter(Boolean);
+const usersToNotify = [bug.reportedById, bug.assignedToId].filter(Boolean);
 
-for (const uid of users) {
-  await createNotification(
-    uid,
-    "Bug Status Updated",
-    `Bug ${bug.bugId} status changed to ${status}`,
-    `/bugs/${bugId}`
-  );
+for (const uid of usersToNotify) {
+
+  const user = await prisma.user.findUnique({
+    where: { id: uid }
+  });
+
+  let pref = await prisma.notificationPreference.findUnique({
+    where: { userId: uid }
+  });
+
+  if (!pref) {
+    pref = await prisma.notificationPreference.create({
+      data: { userId: uid }
+    });
+  }
+
+  // email notification
+ if (pref.bugStatusEmail && user?.email && !isQuietHours(pref)){
+    try {
+      await notifyBugStatusChange(user.email, bug.bugId, status);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+  }
+
+  // in-app notification
+ if (pref.bugStatusInApp){
+    await createNotification(
+      uid,
+      "Bug Status Updated",
+      `Bug ${bug.bugId} status changed to ${status}`,
+      `/bugs/${bugId}`
+    );
+  }
 }
 // 🔔 Re-test notification
-if (status === "Fixed" && reporter?.email) {
-  try {
-    await notifyRetest(reporter.email, bug.bugId);
-  } catch (err) {
-    console.error("Notification error:", err);
-  }
-}
 if (status === "Fixed") {
-  await createNotification(
-    bug.reportedById,
-    "Re-test Requested",
-    `Re-test requested for ${bug.bugId}`,
-    `/bugs/${bugId}`
-  );
-}
 
+  let pref = await prisma.notificationPreference.findUnique({
+    where: { userId: bug.reportedById }
+  });
+
+  if (!pref) {
+    pref = await prisma.notificationPreference.create({
+      data: { userId: bug.reportedById }
+    });
+  }
+
+  if (pref.retestEmail && reporter?.email && !isQuietHours(pref)){
+    try {
+      await notifyRetest(reporter.email, bug.bugId);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+  }
+
+  if (pref.retestInApp){
+    await createNotification(
+      bug.reportedById,
+      "Re-test Requested",
+      `Re-test requested for ${bug.bugId}`,
+      `/bugs/${bugId}`
+    );
+  }
+
+}
      res.json({
   msg: `Bug ${status.replace("_", " ")} successfully`,
   bug: updated,

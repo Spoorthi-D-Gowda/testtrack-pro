@@ -75,5 +75,56 @@ router.put("/:id/read", auth, async (req, res) => {
   }
 
 });
+/*
+Delete single notification
+*/
+router.delete("/:id", auth, async (req, res) => {
 
+  try {
+
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: Number(req.params.id),
+        userId: req.user.id
+      }
+    });
+
+    if (!notification) {
+      return res.status(404).json({ msg: "Notification not found" });
+    }
+
+    await prisma.notification.delete({
+      where: { id: notification.id }
+    });
+
+    res.json({ msg: "Notification deleted" });
+
+  } catch (err) {
+
+    console.error("Delete notification error:", err);
+    res.status(500).json({ msg: "Delete failed" });
+
+  }
+
+});
+router.delete("/", auth, async (req,res)=>{
+
+  try{
+
+    await prisma.notification.deleteMany({
+      where:{
+        userId:req.user.id
+      }
+    });
+
+    res.json({msg:"All notifications deleted"});
+
+  }catch(err){
+
+    console.error(err);
+    res.status(500).json({msg:"Delete failed"});
+
+  }
+
+});
 module.exports = router;

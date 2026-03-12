@@ -2,6 +2,7 @@ const express = require("express");
 const { PrismaClient } = require("@prisma/client");
 const { notifyTestAssigned } = require("../utils/notificationService");
 const { createNotification } = require("../utils/inAppNotification");
+const { isQuietHours } = require("../utils/quietHours");
 const auth = require("../middleware/auth");
 const role = require("../middleware/role");
 
@@ -108,21 +109,38 @@ if (testerIds && testerIds.length > 0) {
     }
   });
 
-  for (const tester of testers) {
-    if (tester?.email) {
-      try {
-        await notifyTestAssigned(tester.email, name);
-      } catch (err) {
-        console.error("Notification error:", err);
-      }
-    }
-    await createNotification(
-  tester.id,
-  "Test Run Assigned",
-  `Test run '${name}' assigned to you`,
-  `/testruns/${testRun.id}`
-);
+for (const tester of testers) {
+
+  let pref = await prisma.notificationPreference.findUnique({
+    where: { userId: tester.id }
+  });
+
+  if (!pref) {
+    pref = await prisma.notificationPreference.create({
+      data: { userId: tester.id }
+    });
   }
+
+  // Email notification
+  if (pref.testRunEmail && tester?.email && !isQuietHours(pref)) {
+    try {
+      await notifyTestAssigned(tester.email, name);
+    } catch (err) {
+      console.error("Notification error:", err);
+    }
+  }
+
+  // In-app notification
+  if (pref.testRunInApp) {
+    await createNotification(
+      tester.id,
+      "Test Run Assigned",
+      `Test run '${name}' assigned to you`,
+      `/testruns/${testRun.id}`
+    );
+  }
+
+}
 
 }
       res.status(201).json({
@@ -192,19 +210,39 @@ const tester = await prisma.user.findUnique({
   where: { id: testerId }
 });
 
-if (tester?.email) {
+if (!tester || tester.role !== "tester") {
+  return res.status(400).json({
+    msg: "Invalid tester selected"
+  });
+}
+let pref = await prisma.notificationPreference.findUnique({
+  where: { userId: tester.id }
+});
+
+if (!pref) {
+  pref = await prisma.notificationPreference.create({
+    data: { userId: tester.id }
+  });
+}
+
+// Email notification
+if (pref.testRunEmail && tester?.email && !isQuietHours(pref)) {
   try {
     await notifyTestAssigned(tester.email, run.name);
   } catch (err) {
     console.error("Notification error:", err);
   }
 }
-await createNotification(
-  testerId,
-  "Test Run Assigned",
-  `Test run '${run.name}' assigned to you`,
-  `/testruns/${runId}`
-);
+
+// In-app notification
+if (pref.testRunInApp) {
+  await createNotification(
+    tester.id,
+    "Test Run Assigned",
+    `Test run '${run.name}' assigned to you`,
+    `/testruns/${runId}`
+  );
+}
       res.json({
         msg: "Tester assigned successfully",
         data: assignment,
