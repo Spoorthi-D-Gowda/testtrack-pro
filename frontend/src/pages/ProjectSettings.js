@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import api from "../api";
-
+import Swal from "sweetalert2";
 const ProjectSettings = () => {
 
   const projectId = localStorage.getItem("projectId");
@@ -78,16 +78,55 @@ const saveWorkflow = async () => {
   loadSettings();
 };
 const deleteModule = async (id) => {
+
+  const confirm = await Swal.fire({
+    title: "Delete Module?",
+    text: "This module will be removed.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#d33",
+    confirmButtonText: "Delete",
+  });
+
+  if (!confirm.isConfirmed) return;
+
   await api.delete(`/projects/modules/${id}`);
+
+  Swal.fire("Deleted!", "Module removed successfully.", "success");
+
   loadSettings();
 };
 const deleteEnv = async (id) => {
+
+  const confirm = await Swal.fire({
+    title: "Delete Environment?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   await api.delete(`/projects/environments/${id}`);
+
+  Swal.fire("Deleted!", "Environment removed.", "success");
+
   loadSettings();
 };
 const deleteField = async (id) => {
 
+  const confirm = await Swal.fire({
+    title: "Delete Custom Field?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Delete"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   await api.delete(`/projects/custom-fields/${id}`);
+
+  Swal.fire("Deleted!", "Custom field removed.", "success");
 
   loadSettings();
 };

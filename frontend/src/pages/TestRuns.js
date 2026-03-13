@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function TestRuns() {
 const navigate = useNavigate();
   const [runs, setRuns] = useState([]);
@@ -44,7 +44,11 @@ const addCasesToRun = async () => {
     `/testruns/${selectedRunId}/addcases`,
     { testCaseIds: selectedTestCases }
   );
-  alert("Test cases added successfully");
+  Swal.fire({
+  icon: "success",
+  title: "Added",
+  text: "Test cases added to run successfully",
+});
   setShowAddPopup(false);   // ✅ correct popup
   setSelectedTestCases([]);
 
@@ -126,7 +130,11 @@ useEffect(() => {
         }
       );
 
-      alert("Test Run Created Successfully");
+      Swal.fire({
+  icon: "success",
+  title: "Test Run Created",
+  text: "Test run created successfully",
+});
 
       setName("");
       setDescription("");
@@ -137,7 +145,11 @@ useEffect(() => {
       fetchRuns();
 
     } catch (err) {
-      alert(err.response?.data?.msg || "Failed to create run");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: err.response?.data?.msg || "Failed to create run",
+});
     }
   };
 
@@ -172,7 +184,11 @@ const openRunCases = async (runId) => {
     setShowPopup(true);
 
   } catch (err) {
-    alert("Failed to load test cases");
+    Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to load test cases",
+});
   }
 };
 const handleTestCaseSelect = (id) => {
@@ -196,7 +212,7 @@ const handleTesterSelect = (id) => {
         <h2>Test Run Management</h2>
 
         {/* ================= CREATE FORM ================= */}
-  {(role === "tester" || role === "admin") && (
+  {role === "admin" && (
        <form onSubmit={createRun}>
         <div className="testrun-form">
  
@@ -359,14 +375,18 @@ onChange={(e)=>setMilestoneId(e.target.value)}
                 className="primary-btn"
                 onClick={async () => {
                   const progress = await getProgress(run.id);
-                  alert(
-                    `Progress: ${progress.progress}%\n` +
-                    `Total: ${progress.total}\n` +
-                    `Completed: ${progress.completed}\n` +
-                    `Pass: ${progress.pass}\n` +
-                    `Fail: ${progress.fail}\n` +
-                    `Blocked: ${progress.blocked}`
-                  );
+                 Swal.fire({
+  title: "Test Run Progress",
+  html: `
+    <b>Progress:</b> ${progress.progress}% <br/>
+    <b>Total:</b> ${progress.total} <br/>
+    <b>Completed:</b> ${progress.completed} <br/>
+    <b>Pass:</b> ${progress.pass} <br/>
+    <b>Fail:</b> ${progress.fail} <br/>
+    <b>Blocked:</b> ${progress.blocked}
+  `,
+  icon: "info"
+});
                 }}
               >
                 View Progress

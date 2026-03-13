@@ -5,8 +5,7 @@ import { FcGoogle } from "react-icons/fc";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import "../auth.css";
-
-
+import Swal from "sweetalert2";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -79,16 +78,29 @@ if (remember) {
   sessionStorage.setItem("userId", res.data.user.id);
 }
 
+await Swal.fire({
+  icon: "success",
+  title: "Login Successful",
+  text: "Redirecting to dashboard...",
+  timer: 1500,
+  showConfirmButton: false
+});
 
-      setSuccess("Login successful! Redirecting... ");
-
-      navigate("/dashboard");
+navigate("/dashboard");
 
     } catch (err) {
       if (err.response) {
-        setError(err.response.data.msg || "Invalid credentials ");
+        Swal.fire({
+  icon: "error",
+  title: "Login Failed",
+  text: err.response?.data?.msg || "Invalid credentials"
+});
       } else {
-        setError("Server error ");
+        Swal.fire({
+  icon: "error",
+  title: "Server Error",
+  text: "Something went wrong. Please try again."
+});
       }
     }
   };

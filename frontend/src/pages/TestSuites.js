@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "../api";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function TestSuites({
   setActiveSection,
   setSelectedSuiteExecutionId
@@ -97,8 +97,12 @@ setActiveSection("suiteExecution");
     }
 
   } catch (err) {
-    alert("Failed to execute suite");
-  }
+  Swal.fire({
+    icon: "error",
+    title: "Execution Failed",
+    text: "Failed to execute suite",
+  });
+}
 };
 
 const renderSuiteTree = (parentId = null, level = 0) => {

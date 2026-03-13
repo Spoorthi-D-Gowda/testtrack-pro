@@ -1,39 +1,43 @@
 import { useState } from "react";
 import axios from "axios";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    setMsg("");
-    setError("");
+  try {
+    const res = await axios.post(
+      "http://localhost:5000/api/auth/forgot-password",
+      { email }
+    );
 
-    try {
-      const res = await axios.post(
-        "http://localhost:5000/api/auth/forgot-password",
-        { email }
-      );
+    Swal.fire({
+      icon: "success",
+      title: "Email Sent",
+      text: res.data.msg || "Password reset link sent to your email",
+    });
 
-      setMsg(res.data.msg);
+    setEmail("");
 
-    } catch (err) {
-      setError(err.response?.data?.msg || "Error ");
-    }
-  };
+  } catch (err) {
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: err.response?.data?.msg || "Failed to send reset link",
+    });
+
+  }
+};
 
   return (
     <div className="auth-container">
       <div className="auth-card">
 
         <h2>Forgot Password</h2>
-
-        {msg && <p className="success-msg">{msg}</p>}
-        {error && <p className="error-msg">{error}</p>}
 
         <form onSubmit={handleSubmit}>
 

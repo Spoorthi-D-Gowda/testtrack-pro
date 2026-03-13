@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import api from "../api";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function ExecuteTestCase() {
   const { testCaseId } = useParams();
 const id = testCaseId;
@@ -66,7 +66,11 @@ const startExecution = useCallback(async () => {
 
   } catch (err) {
     console.error("START ERROR:", err.response?.data);
-    alert(err.response?.data?.msg || "Failed to start execution");
+    Swal.fire({
+  icon: "error",
+  title: "Execution Error",
+  text: err.response?.data?.msg || "Failed to start execution",
+});
   }
 }, [id, token, runId]);
 
@@ -84,7 +88,11 @@ const fetchExecution = useCallback(async (id) => {
     setLoading(false);
 
   } catch (err) {
-    alert("Failed to fetch execution");
+    Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to fetch execution",
+});
   }
 }, [token]);
 
@@ -111,7 +119,11 @@ const updateStep = async (stepExecutionId, field, value) => {
     );
 
   } catch (err) {
-    alert("Failed to update step");
+    Swal.fire({
+  icon: "error",
+  title: "Update Failed",
+  text: "Failed to update step",
+});
   }
 };
 
@@ -184,11 +196,19 @@ if (suiteRes.data.mode === "parallel") {
 }
 }
 
-    alert("Execution completed successfully");
+    Swal.fire({
+  icon: "success",
+  title: "Execution Completed",
+  text: "Execution completed successfully",
+});
     navigate("/dashboard");
 
   } catch (err) {
-    alert("Failed to complete execution");
+    Swal.fire({
+  icon: "error",
+  title: "Execution Failed",
+  text: "Failed to complete execution",
+});
   }
 };
 useEffect(() => {
@@ -199,7 +219,11 @@ useEffect(() => {
     const execId = Number(id);
 
     if (!execId || isNaN(execId)) {
-      alert("Invalid execution ID");
+      Swal.fire({
+  icon: "warning",
+  title: "Invalid ID",
+  text: "Invalid execution ID",
+});
       return;
     }
 
@@ -212,7 +236,11 @@ useEffect(() => {
   const testCaseId = Number(id);
 
   if (!testCaseId || isNaN(testCaseId)) {
-    alert("Invalid Test Case ID");
+    Swal.fire({
+  icon: "warning",
+  title: "Invalid Test Case",
+  text: "Invalid Test Case ID",
+});
     return;
   }
 
@@ -251,13 +279,23 @@ useEffect(() => {
       }
     );
 
-    alert("Evidence uploaded successfully");
+    Swal.fire({
+  icon: "success",
+  title: "Uploaded",
+  text: "Evidence uploaded successfully",
+  timer: 2000,
+  showConfirmButton: false
+});
 
     // 🔥 Refresh execution to show new evidence
     fetchExecution(executionId);
 
   } catch (err) {
-    alert(err.response?.data?.msg || "Upload failed");
+    Swal.fire({
+  icon: "error",
+  title: "Upload Failed",
+  text: err.response?.data?.msg || "Upload failed",
+});
   }
 };
 
@@ -286,7 +324,11 @@ const quickFail = async (stepExecutionId) => {
       }
     );
 
-    alert(res.data.msg);
+    Swal.fire({
+  icon: "success",
+  title: "Bug Created",
+  text: res.data.msg,
+});
 
     // disable button
     setCreatedBugs(prev => [...prev, stepExecutionId]);
@@ -294,11 +336,19 @@ const quickFail = async (stepExecutionId) => {
   }catch (err) {
 
   if (err.response?.data?.msg === "Bug already created for this step") {
-    alert("Bug already exists for this step.");
+    Swal.fire({
+  icon: "info",
+  title: "Bug Exists",
+  text: "Bug already exists for this step",
+});
     return;
   }
 
-  alert(err.response?.data?.msg || "Failed to create bug");
+  Swal.fire({
+  icon: "error",
+  title: "Bug Creation Failed",
+  text: err.response?.data?.msg || "Failed to create bug",
+});
 }
 };
 
