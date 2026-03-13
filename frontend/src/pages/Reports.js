@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import api from "../api";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function Reports({ reportTab }) {
 
   const [report, setReport] = useState(null);
@@ -124,11 +124,21 @@ const handleExport = async (type) => {
     document.body.appendChild(link);
     link.click();
 
-    alert("Export successful ✅");
+    Swal.fire({
+  icon: "success",
+  title: "Export Successful",
+  text: "Your report has been downloaded.",
+  timer: 2000,
+  showConfirmButton: false
+});
 
   } catch (err) {
     console.error(err);
-    alert("Export failed ❌");
+    Swal.fire({
+  icon: "error",
+  title: "Export Failed",
+  text: "Something went wrong while exporting the report."
+});
   } finally {
     setExporting(false);
     setShowExportMenu(false);

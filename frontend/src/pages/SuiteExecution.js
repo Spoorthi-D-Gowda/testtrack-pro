@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api";
+import Swal from "sweetalert2";
 import "../auth.css";
 
 export default function SuiteExecution({ suiteExecutionId }) {
@@ -24,7 +25,11 @@ useEffect(() => {
       setExecutions(res.data.executions);
 
     } catch (err) {
-      alert("Failed to load suite execution");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to load suite execution"
+});
     }
   };
 

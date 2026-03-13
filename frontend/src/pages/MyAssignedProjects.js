@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../api";
-
+import Swal from "sweetalert2";
 export default function MyAssignedProjects({
   setActiveSection,
   setTestCaseTab
@@ -8,29 +8,58 @@ export default function MyAssignedProjects({
 
   const [projects, setProjects] = useState([]);
 
-  useEffect(() => {
+useEffect(() => {
 
-    const fetchProjects = async () => {
+  const fetchProjects = async () => {
+
+    try {
 
       const res = await api.get("/projects/my");
 
       setProjects(res.data);
 
-    };
+      if (res.data.length === 0) {
+        Swal.fire({
+          icon: "info",
+          title: "No Projects",
+          text: "You are not assigned to any projects yet."
+        });
+      }
 
-    fetchProjects();
+    } catch (err) {
 
-  }, []);
+      console.error(err);
 
-  const selectProject = (id) => {
+      Swal.fire({
+        icon: "error",
+        title: "Failed to Load",
+        text: "Could not load assigned projects."
+      });
 
-    localStorage.setItem("projectId", id);
-
-    setActiveSection("testcases");
-
-    setTestCaseTab("create");
+    }
 
   };
+
+  fetchProjects();
+
+}, []);
+
+const selectProject = (id) => {
+
+  localStorage.setItem("projectId", id);
+
+  Swal.fire({
+    icon: "success",
+    title: "Project Selected",
+    text: "You can now create test cases for this project",
+    timer: 1200,
+    showConfirmButton: false
+  });
+
+  setActiveSection("testcases");
+  setTestCaseTab("create");
+
+};
 
 return (
   <div className="assigned-projects-wrapper">

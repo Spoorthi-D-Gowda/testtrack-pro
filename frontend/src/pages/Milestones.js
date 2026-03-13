@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api";
-
+import Swal from "sweetalert2";
 export default function Milestones() {
 
 const [milestones, setMilestones] = useState([]);
@@ -35,7 +35,11 @@ const load = async () => {
 
  }catch(err){
   console.error("Milestones load error:",err);
-  alert("Failed to load milestones");
+  Swal.fire({
+  icon: "error",
+  title: "Load Failed",
+  text: "Failed to load milestones"
+});
  }
 };
 
@@ -51,17 +55,35 @@ const create = async (e) => {
 
  e.preventDefault();
 
- await api.post("/milestones", {
-  name,
-  targetDate: date,
-  targetPassRate: rate
- });
+ try {
 
- setName("");
- setDate("");
- setRate("");
+  await api.post("/milestones", {
+    name,
+    targetDate: date,
+    targetPassRate: rate
+  });
 
- load();
+  Swal.fire({
+    icon: "success",
+    title: "Milestone Created",
+    text: "Milestone created successfully"
+  });
+
+  setName("");
+  setDate("");
+  setRate("");
+
+  load();
+
+ } catch(err){
+
+  Swal.fire({
+    icon: "error",
+    title: "Creation Failed",
+    text: "Could not create milestone"
+  });
+
+ }
 };
 
 
@@ -69,8 +91,39 @@ const create = async (e) => {
 
 const deleteMilestone = async (id) => {
 
- await api.delete(`/milestones/${id}`);
- load();
+ const confirm = await Swal.fire({
+  title: "Delete Milestone?",
+  text: "This milestone will be removed permanently.",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#d33",
+  cancelButtonText: "Cancel",
+  confirmButtonText: "Yes, Delete"
+ });
+
+ if (!confirm.isConfirmed) return;
+
+ try {
+
+  await api.delete(`/milestones/${id}`);
+
+  Swal.fire({
+    icon: "success",
+    title: "Deleted",
+    text: "Milestone deleted successfully"
+  });
+
+  load();
+
+ } catch(err){
+
+  Swal.fire({
+    icon: "error",
+    title: "Delete Failed",
+    text: "Could not delete milestone"
+  });
+
+ }
 
 };
 
@@ -157,7 +210,7 @@ Create Milestone
 <p>{p.passRate}% Pass</p>
 </div>
 
-
+{role === "admin" && (
 <div className="milestone-actions">
   <button
     onClick={() => deleteMilestone(m.id)}
@@ -166,7 +219,7 @@ Create Milestone
     Delete
   </button>
 </div>
-
+)}
 </div>
 
 </div>

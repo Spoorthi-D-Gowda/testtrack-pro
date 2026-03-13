@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 import "../auth.css";
 
 export default function ExecutionCompare({ testCaseId }) {
@@ -25,16 +26,29 @@ useEffect(() => {
 );
       setExecutions(res.data);
     } catch (err) {
-      console.error("Failed to fetch history");
-    }
+  console.error(err);
+
+  Swal.fire({
+    icon: "error",
+    title: "Execution History Error",
+    text: "Failed to load execution comparison data"
+  });
+}
   };
 
   fetchHistory();
 }, [testCaseId]);
 
-  if (executions.length < 2) {
-    return <div>No previous execution to compare</div>;
-  }
+if (executions.length < 2) {
+  return (
+    <div className="compare-container">
+      <h2>Execution Comparison</h2>
+      <p style={{color:"#666"}}>
+        No previous execution available to compare.
+      </p>
+    </div>
+  );
+}
 
   const latest = executions[0];
   const previous = executions[1];

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function ExecutionHistory({
   setActiveSection,
   setSelectedCompareId
@@ -33,7 +33,11 @@ const formatTime = (seconds) => {
       );
       setExecutions(res.data);
     } catch (err) {
-      alert("Failed to fetch executions");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to fetch executions",
+});
     }
   };
 
@@ -47,7 +51,11 @@ const formatTime = (seconds) => {
       );
       setSelectedExecution(res.data);
     } catch (err) {
-      alert("Failed to fetch execution details");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to fetch execution details",
+});
     }
   };
 

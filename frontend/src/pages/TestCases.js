@@ -3,7 +3,7 @@ import api from "../api";
 import "../auth.css";
 import { useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
-
+import Swal from "sweetalert2";
 export default function TestCasesManager({
   activeTab,
   setTestCaseTab,
@@ -77,8 +77,11 @@ const fetchTemplates = useCallback(async () => {
 
   } catch (err) {
 
-    alert("Failed to load templates");
-
+    alert("Failed to load templates");Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to load templates",
+});
   }
 
 }, [token]);
@@ -213,7 +216,11 @@ res = await api.put(
 
       setEditId(null);
 
-      alert(res.data.msg || "Updated successfully ");
+      Swal.fire({
+  icon: "success",
+  title: "Success",
+  text: res.data.msg || "Updated successfully",
+});
       setActiveSection("testcases");
 setTestCaseTab("view");
 
@@ -256,7 +263,11 @@ setTestCaseTab("view");
         }
       );
 
-      alert(res.data.msg || "Added successfully ");
+      Swal.fire({
+  icon: "success",
+  title: "Success",
+  text: res.data.msg || "Added successfully",
+});
       setActiveSection("testcases");
 setTestCaseTab("view");
     }
@@ -270,10 +281,11 @@ setTestCaseTab("view");
 
     console.error("ADD/UPDATE ERROR:", err.response?.data);
 
-    alert(
-      err.response?.data?.msg ||
-      "Something went wrong "
-    );
+Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: err.response?.data?.msg || "Something went wrong",
+});
   }
 };
   // ================= CLEAR =================
@@ -308,7 +320,11 @@ const deleteCase = async (id) => {
     );
 
     // Show success message
-    alert(res.data.msg || "Deleted successfully ");
+    Swal.fire({
+  icon: "success",
+  title: "Deleted",
+  text: res.data.msg || "Deleted successfully",
+});
 
     fetchCases();
 
@@ -548,11 +564,17 @@ const fetchHistory = async (id) => {
     return;
   }
 
-  if (!window.confirm(
-    `Are you sure you want to delete ${selectedCases.length} test cases?`
-  )) {
-    return;
-  }
+const confirm = await Swal.fire({
+  title: "Delete Test Cases?",
+  text: `Are you sure you want to delete ${selectedCases.length} test cases?`,
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#d33",
+  cancelButtonColor: "#3085d6",
+  confirmButtonText: "Yes, delete",
+});
+
+if (!confirm.isConfirmed) return;
   try {
 
     const res = await api.post(
@@ -565,7 +587,11 @@ const fetchHistory = async (id) => {
       }
     );
 
-    alert(res.data.msg);
+   Swal.fire({
+  icon: "success",
+  title: "Deleted",
+  text: res.data.msg,
+});
 
     setSelectedCases([]);
 
@@ -692,9 +718,14 @@ const confirmImport = async () => {
       }
     );
 
-    alert(
-      `Import Completed\nCreated: ${res.data.created}\nFailed: ${res.data.failed}`
-    );
+Swal.fire({
+  icon: "success",
+  title: "Import Completed",
+  html: `
+    Created: ${res.data.created}<br/>
+    Failed: ${res.data.failed}
+  `,
+});
 
     setShowPreview(false);
     setImportFile(null);
@@ -783,9 +814,16 @@ const restoreCase = async (id) => {
 };
 const permanentDelete = async (id) => {
 
-  if (!window.confirm("This action cannot be undone. Continue?")) {
-    return;
-  }
+  const confirm = await Swal.fire({
+  title: "Permanent Delete",
+  text: "This action cannot be undone!",
+  icon: "warning",
+  showCancelButton: true,
+  confirmButtonColor: "#d33",
+  confirmButtonText: "Delete Permanently"
+});
+
+if (!confirm.isConfirmed) return;
 
   try {
 
@@ -830,7 +868,11 @@ const uploadAttachment = async (id, file) => {
       }
     );
 
-    alert("File uploaded successfully");
+    Swal.fire({
+  icon: "success",
+  title: "Uploaded",
+  text: "File uploaded successfully",
+});
 
     fetchCases(); // refresh list
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function Bugs({ type }) {
 
   const [bugs, setBugs] = useState([]);
@@ -57,7 +57,12 @@ const addComment = async (bugId) => {
     const text = newComment[bugId];
 
     if (!text || text.trim() === "") {
-      alert("Comment cannot be empty");
+      Swal.fire({
+  icon: "warning",
+  title: "Comment cannot be empty",
+  timer: 2000,
+  showConfirmButton: false
+});
       return;
     }
 
@@ -72,7 +77,11 @@ const addComment = async (bugId) => {
       }
     );
 
-    alert("Comment added");
+    Swal.fire({
+  icon: "success",
+  title: "Comment Added",
+  text: "Your comment was added successfully",
+});
 
     setNewComment({
       ...newComment,
@@ -80,7 +89,11 @@ const addComment = async (bugId) => {
     });
 
   } catch (err) {
-    alert(err.response?.data?.msg || "Failed to add comment");
+    Swal.fire({
+  icon: "error",
+  title: "Comment Failed",
+  text: err.response?.data?.msg || "Failed to add comment",
+});
   }
 };
   // ================= FETCH DEVELOPERS =================
@@ -136,7 +149,12 @@ useEffect(() => {
   }
 );
 
-      alert("Bug assigned successfully");
+      Swal.fire({
+  icon: "success",
+  title: "Success",
+  text: "Bug assigned successfully",
+});
+      
 
       setSelectedBugId(null);
       setSelectedDeveloper("");
@@ -144,7 +162,11 @@ useEffect(() => {
       fetchBugs();
 
     } catch (err) {
-      alert(err.response?.data?.msg || "Failed to assign bug");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: err.response?.data?.msg || "Failed to assign bug",
+});
     }
   };
 const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) => {
@@ -159,11 +181,19 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
     }
   }
 );
-    alert(res.data.msg);
+    Swal.fire({
+  icon: "success",
+  title: "Status Updated",
+  text: res.data.msg,
+});
     fetchBugs();
 
   } catch (err) {
-    alert(err.response?.data?.msg || "Failed to update status");
+    Swal.fire({
+  icon: "error",
+  title: "Update Failed",
+  text: err.response?.data?.msg || "Failed to update status",
+});
   }
 };
   return (
@@ -333,15 +363,24 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
 
     {bug.status === "Open" && (
       <button
-        className="small-action-btn"
-        onClick={() => {
-          const reason = prompt("Enter reason for rejection:");
-          if (!reason) return;
-          updateStatus(bug.id, "Wont_Fix", null, null, reason);
-        }}
-      >
-        Won't Fix
-      </button>
+  className="small-action-btn"
+  onClick={async () => {
+
+    const { value: reason } = await Swal.fire({
+      title: "Enter reason for rejection",
+      input: "text",
+      inputPlaceholder: "Reason...",
+      showCancelButton: true
+    });
+
+    if (!reason) return;
+
+    updateStatus(bug.id, "Wont_Fix", null, null, reason);
+
+  }}
+>
+  Won't Fix
+</button>
     )}
      </>
 )}
@@ -350,15 +389,38 @@ const updateStatus = async (id, status, fixNotes, commitLink, rejectionReason) =
 {role === "developer" && bug.status === "In_Progress" && (
   <button
     className="small-action-btn execute-btn"
-    onClick={() => {
-      const fixNotes = prompt("Enter fix notes:");
-      const commitLink = prompt("Enter commit link:");
-      updateStatus(bug.id, "Fixed", fixNotes, commitLink);
+    onClick={async () => {
+
+      const { value: formValues } = await Swal.fire({
+        title: "Mark Bug as Fixed",
+        html:
+          '<input id="fixNotes" class="swal2-input" placeholder="Fix Notes">' +
+          '<input id="commitLink" class="swal2-input" placeholder="Commit Link">',
+        showCancelButton: true,
+        focusConfirm: false,
+        preConfirm: () => {
+          return {
+            fixNotes: document.getElementById("fixNotes").value,
+            commitLink: document.getElementById("commitLink").value
+          };
+        }
+      });
+
+      if (!formValues) return;
+
+      updateStatus(
+        bug.id,
+        "Fixed",
+        formValues.fixNotes,
+        formValues.commitLink
+      );
+
     }}
   >
     Mark Fixed
   </button>
 )}
+
 {role === "tester" && bug.status === "Fixed" && (
   <>
     <button 

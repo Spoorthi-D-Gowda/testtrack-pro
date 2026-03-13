@@ -2,7 +2,7 @@ import { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-
+import Swal from "sweetalert2";
 import "../auth.css";
 
 export default function Register() {
@@ -41,10 +41,14 @@ const checkPassword = (value) => {
     setError("");
     setSuccess("");
 
-    if (password.length < 6) {
-      setError("Password too weak. Please use strong password ");
-      return;
-    }
+if (!strongPassword.test(password)) {
+  Swal.fire({
+    icon: "error",
+    title: "Weak Password",
+    text: "Password must contain uppercase, lowercase, number and special character.",
+  });
+  return;
+}
 
     try {
       await axios.post(
@@ -52,13 +56,27 @@ const checkPassword = (value) => {
         { name, email, password, role }
       );
 
-      setSuccess("Registration successful! Please check your email to verify.");
+     Swal.fire({
+  icon: "success",
+  title: "Registration Successful",
+  text: "Please check your email to verify your account.",
+}).then(() => {
+  navigate("/");
+});
 
     } catch (err) {
       if (err.response) {
-        setError(err.response.data.msg || "Registration failed ");
+        Swal.fire({
+  icon: "error",
+  title: "Registration Failed",
+  text: err.response?.data?.msg || "Registration failed",
+});
       } else {
-        setError("Server error ");
+        Swal.fire({
+  icon: "error",
+  title: "Server Error",
+  text: "Something went wrong. Please try again.",
+});
       }
     }
   };

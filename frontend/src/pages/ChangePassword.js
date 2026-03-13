@@ -2,12 +2,10 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import "../auth.css";
-
+import Swal from "sweetalert2";
 export default function ChangePassword() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [msg, setMsg] = useState("");
-  const [error, setError] = useState("");
   const navigate = useNavigate();
   const token =
     localStorage.getItem("token") ||
@@ -15,9 +13,6 @@ export default function ChangePassword() {
 
 const handleSubmit = async (e) => {
   e.preventDefault();
-
-  setMsg("");
-  setError("");
 
   try {
     const res = await axios.post(
@@ -30,17 +25,28 @@ const handleSubmit = async (e) => {
       }
     );
 
-    setMsg(res.data.msg);
+    Swal.fire({
+      icon: "success",
+      title: "Password Updated",
+      text: res.data.msg,
+      confirmButtonColor: "#3085d6",
+    });
+
     setCurrentPassword("");
     setNewPassword("");
 
-    // 🔥 Redirect after success
     setTimeout(() => {
       navigate("/dashboard");
-    }, 1000);
+    }, 1500);
 
   } catch (err) {
-    setError(err.response?.data?.msg || "Error");
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: err.response?.data?.msg || "Something went wrong",
+    });
+
   }
 };
 
@@ -48,9 +54,6 @@ const handleSubmit = async (e) => {
     <div className="auth-container">
       <div className="auth-card">
         <h2>Change Password</h2>
-
-        {msg && <p className="success-msg">{msg}</p>}
-        {error && <p className="error-msg">{error}</p>}
 
         <form onSubmit={handleSubmit}>
           <input

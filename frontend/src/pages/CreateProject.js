@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import api from "../api";
-
+import Swal from "sweetalert2";
 export default function CreateProject() {
 
   const [name, setName] = useState("");
@@ -53,6 +53,17 @@ const openAssignTesters = async (projectId) => {
 
 const assignTesters = async () => {
 
+  const confirm = await Swal.fire({
+    title: "Assign Testers?",
+    text: "Are you sure you want to assign selected testers to this project?",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Yes, Assign",
+    cancelButtonText: "Cancel"
+  });
+
+  if (!confirm.isConfirmed) return;
+
   await api.post(
     `/projects/${assignProjectId}/assign-testers`,
     {
@@ -60,11 +71,14 @@ const assignTesters = async () => {
     }
   );
 
-  alert("Testers assigned successfully");
+  Swal.fire({
+    icon: "success",
+    title: "Success",
+    text: "Testers assigned successfully",
+  });
 
   setAssignProjectId(null);
   setSelectedTesters([]);
-
 };
 
   useEffect(() => {
@@ -73,7 +87,11 @@ const assignTesters = async () => {
 
   const createProject = async () => {
     if (!name.trim()) {
-      alert("Project name required");
+      Swal.fire({
+  icon: "warning",
+  title: "Missing Field",
+  text: "Project name is required",
+});
       return;
     }
 
@@ -84,7 +102,11 @@ const assignTesters = async () => {
       description
     });
 
-      alert("Project created");
+      Swal.fire({
+  icon: "success",
+  title: "Project Created",
+  text: "Project created successfully",
+});
 
       setName("");
 
@@ -92,7 +114,11 @@ const assignTesters = async () => {
 
     } catch (err) {
       console.error(err);
-      alert("Failed to create project");
+      Swal.fire({
+  icon: "error",
+  title: "Error",
+  text: "Failed to create project",
+});
     }
   };
 
